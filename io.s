@@ -1,7 +1,33 @@
-# io.s		Provides input and output subroutines based on sysetemcalls.
+# io.s		Provides input and output subroutines based on sysetem calls.
 #
 # Author: 	Kolbe Prusa
+.data
+.globl	FILE_FLAG_R, FILE_FLAG_WC, FILE_FLAG_WCA
+	FILE_FLAG_R:		.word	0
+	FILE_FLAG_WC:	.word	1
+	FILE_FLAG_WCA:	.word	9
 .text
+##########################################################################
+#
+#	Opens a file with the specified flag.
+#
+#	Arguments:
+#		- $a0 = Address of string buffer containing filename
+#		- $a1 = Flag
+#			- 0: read-only
+#			- 1: write-only with creation
+#			- 9: write-only with create and append.
+#
+#	Results:
+#		- $v0 =	File descriptor (negative if error)
+#
+##########################################################################
+.globl openFile
+openFile:
+	li	$v0, 13				# load syscall code for open file.
+	syscall
+	jr	$ra 
+
 ##########################################################################
 #
 #	Exits the program
@@ -20,12 +46,24 @@ exit:						# exit the program
 #		- $a0 = Buffer address
 #		- $a1 = Maximum number of characters to read.
 #
+#	Results:
+#		- $v0 =	Length of string read.
+#
 ##########################################################################
 .globl readString
 readString:	
 	li 	$v0, 8 				# load syscall code for read string
 	syscall
 	
+	la	$v0, ($zero)			# loop couter
+readString_loop:
+	bge	$v0, $a1, readString_return	# if (($t0) > max number of characters to read) -> break loop
+	add	$t1, $v0, $a0
+	lb	$t1, ($t1)
+	beq	$t1, $zero, readString_return
+	addi	$v0, $v0, 1
+	b	readString_loop
+readString_return:
 	jr 	$ra				# return to caller
 
 ##########################################################################
