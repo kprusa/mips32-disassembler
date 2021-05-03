@@ -7,6 +7,24 @@
 	FILE_FLAG_WC:	.word	1
 	FILE_FLAG_WCA:	.word	9
 .text
+
+##########################################################################
+#
+#	Allocates a new buffer on the heap.
+#
+#	Arguments:
+#		- $a0 = Number of bytes to allocate
+#
+#	Results:
+#		- $v0 =	The address of the buffer
+#
+##########################################################################
+.globl alloc
+alloc:
+	li	$v0, 9				# load syscall code for open file.
+	syscall
+	jr	$ra 
+
 ##########################################################################
 #
 #	Opens a file with the specified flag.
@@ -25,6 +43,41 @@
 .globl openFile
 openFile:
 	li	$v0, 13				# load syscall code for open file.
+	syscall
+	jr	$ra 
+	
+##########################################################################
+#
+#	Closes a file with the specified flag.
+#
+#	Arguments:
+#		- $a0 = File descriptor
+#
+##########################################################################
+.globl closeFile
+closeFile:
+	li	$v0, 16				# load syscall code for open file.
+	syscall
+	jr	$ra 
+	
+##########################################################################
+#
+#	Reads bytes from a file.
+#
+#	Arguments:
+#		- $a0 = File descriptor
+#		- $a1 = Address of input buffer.
+#		- $a2 = Max characters (bytes) to read.
+#
+#	Results:
+#		- $v0 =	Number of bytes read
+#			- 0: End of file.
+#			- <0: Error
+#
+##########################################################################
+.globl readFile
+readFile:
+	li	$v0, 14				# load syscall code for open file.
 	syscall
 	jr	$ra 
 
