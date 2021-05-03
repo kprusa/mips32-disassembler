@@ -147,6 +147,22 @@ printInt:                       		# prints an integer at $a0 to stdout
 
         jr      $ra             		# return to caller
         
+
+##########################################################################
+#
+#	Prints an integer in hex.
+#	
+#	Arguments:			
+# 		- $a0 = Integer to print.
+#
+##########################################################################
+.globl printIntHex
+printIntHex: 
+	li	$v0, 34
+	syscall
+	
+	jr	$ra
+        
 ##########################################################################
 #
 #	Prints a string.

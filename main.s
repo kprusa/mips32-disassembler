@@ -30,7 +30,7 @@ main:
 	la	$a0, filenameBuffer		# Open input file in read-only.
 	lw	$a1, FILE_FLAG_R
 	jal	openFile
-	la	$s0, ($v0)			# Save file descriptor.
+	la	$s0, ($v0)			# Save file descriptor. ($s0) = Input file descriptor
 	bge	$s0, $zero, mainValidInputFile	# Check that input file is valid, print error if not.
 	
 	la	$a0, errorInvalidFilename
@@ -40,23 +40,26 @@ main:
 	j	exit
 mainValidInputFile:
 	
-	li	$a0, 65536			# Allocate 64K input buffer.
+	li	$a0, 65536			# Allocate input buffer with 64K capacity.
 	jal	alloc
-	la	$s1, ($v0)			# Save buffer address.
+	la	$s1, ($v0)			# Save buffer address. ($s1) = Input buffer address.
 	
 	la	$a0, ($s0)			# Read 64K of the input file, write into input buffer.
 	la	$a1, ($s1)
 	li	$a2, 65536
 	jal	readFile
+	la	$s2, ($v0)			# ($s2) = Size of input buffer.
 	
-	la	$a0, ($v0)			# Print number of bytes read.
-	jal	printInt
+	la	$a0, ($s0)
+	jal	closeFile
 	
+	la	$a0, ($s1)
+	la	$a1, ($s2)
+	jal	convertHexBuffer
+	la	$s0, ($v0)			# ($s0) = Address of converted input buffer.
 	
-	li	$a0, 32768			# Allocate
-	jal	alloc
-	
-	
-
+	jal	printNewLine
+	la	$a0, ($s0)
+	jal	printIntHex
 	
 	j 	exit

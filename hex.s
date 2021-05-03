@@ -151,3 +151,78 @@ convertHex_epilogue:
 	
   	jr  	$ra 
 	#######################
+
+
+##########################################################################
+#
+#	Converts a buffer containing hexadecimal character values into a binary buffer.
+#
+#	Arguments:
+#		- $a0 = Input buffer address
+#		- $a1 = Input buffer size.
+#
+#	Results:
+#		- $v0 =	Address binary buffer.
+#
+##########################################################################
+.globl convertHexBuffer	
+convertHexBuffer:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	sw 	$s3, -20($fp)
+	sw 	$s4, -24($fp)
+	sw 	$s5, -28($fp)
+	addi	$sp, $sp, -32
+	########################
+	la	$s0, ($a0)
+	la	$s1, ($a1)
+						# Allocate conversion buffer.
+	srl	$a0, $s1, 1			# Divide size of input buffer by 2 (Hex conversion factor)
+	addi	$a0, $a0, 1			# Add 1 to account for odd size of input buffer.
+	jal	alloc
+	la	$s3, ($v0)			# ($s3) = Conversion buffer address.
+	la	$s4, ($v0)
+	
+	add	$t0, $s0, $s1			# ($t0) = End address of input buffer.
+	la	$t1, ($s0)			# ($t1) = Input buffer address position.
+convertHexBuffer_conversionLoop:
+	bge	$t1, $t0, convertHexBuffer_conversionDone	# Loop for size of input buffer.
+	
+	la	$a0, ($t1)			# Convert 8 bytes of hex from input buffer to int.
+	la	$a1, 9
+	jal	convertHex
+						# Add handling of conversion error.
+#	####			
+#	la	$a0, ($v1)			# Output converted value to stdout.
+#	jal	printIntHex
+#	jal	printNewLine
+#	####
+	
+	sw	$v1, ($s3)
+	
+	la	$t1, 9($t1)
+	la	$s3, 4($s3)
+	j	convertHexBuffer_conversionLoop
+convertHexBuffer_conversionDone:
+	la	$v0, ($s4)
+	########################		# Restore protected registers. 
+	lw 	$s5, -28($fp)
+	lw 	$s4, -24($fp)
+	lw 	$s3, -20($fp)
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
+
