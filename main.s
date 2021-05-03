@@ -39,27 +39,30 @@ main:
 	jal	printString
 	j	exit
 mainValidInputFile:
-	
-	li	$a0, 65536			# Allocate input buffer with 64K capacity.
+	li	$a0, 9				# Allocate input buffer to hold on instruction (8 bytes)
 	jal	alloc
 	la	$s1, ($v0)			# Save buffer address. ($s1) = Input buffer address.
-	
-	la	$a0, ($s0)			# Read 64K of the input file, write into input buffer.
+	li	$s2, 2
+
+conversion_loop:
+	ble	$s2, 1, conversion_exit
+	la	$a0, ($s0)			# Read 9 bytes from the input file, write into input buffer.
 	la	$a1, ($s1)
-	li	$a2, 65536
+	li	$a2, 9
 	jal	readFile
-	la	$s2, ($v0)			# ($s2) = Size of input buffer.
+	la	$s2, ($v0)
 	
-	la	$a0, ($s0)
-	jal	closeFile
+	la	$a0, ($s1)			# Convert 8 bytes from buffer to int.
+	li	$a1, 9
+	jal	convertHex			
+	la	$s3, ($v1)
 	
-	la	$a0, ($s1)
-	la	$a1, ($s2)
-	jal	convertHexBuffer
-	la	$s0, ($v0)			# ($s0) = Address of converted input buffer.
-	
-	jal	printNewLine
-	la	$a0, ($s0)
+	###					# Print converted value.
+	la	$a0, ($v1)
 	jal	printIntHex
+	jal	printNewLine
+	###
+	j conversion_loop
+conversion_exit:
 	
 	j 	exit
