@@ -134,12 +134,14 @@ printNewLine:
 	
 ##########################################################################
 #
-#	Prints a space.
+#	Prints a character
+#
+#	Arguments:			
+# 		- $a0 = Character to print.
 #
 ##########################################################################
-.globl printSpace
-printSpace:
-	li	$a0, 32				# load space character ' '.
+.globl printChar
+printChar:
 	li 	$v0, 11 			# load syscall code for print character.
 	syscall
 	

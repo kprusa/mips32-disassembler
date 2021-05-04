@@ -6,6 +6,9 @@ promptFilename:			.asciiz	"Input a filename: "
 
 errorInvalidFilename:		.asciiz "error: invalid filename: "
 errorInvalidInstruction:	.asciiz "error: invalid instruction: "
+errorLine:			.asciiz "line: "
+errorValue:			.asciiz "value: "
+success:			.asciiz "SUCCESS!\n"
 
 filenameBuffer:			.space	256
 filenameBufferLen:		.word	257
@@ -44,8 +47,7 @@ mainValidInputFile:
 	jal	alloc
 	la	$s1, ($v0)			# ($s1) = Input buffer address.
 	
-	
-	li	$s6, 1				# ($s6) = Current instruction line.
+	li	$s2, 1				# ($s2) = Current instruction line.
 conversion_loop:
 	la	$a0, ($s0)			# Read 9 bytes from the input file, write into input buffer.
 	la	$a1, ($s1)
@@ -61,20 +63,61 @@ conversion_loop:
 	
 	la	$a0, ($s3)
 	jal	decoderLookup
-	la	$t0, ($v0)
-	
-	la	$t1, DECODE_INVALID		# Print error if instruction is invalid and exit program.
-	bne	$t0, $t1, conversion_loop_valid_instruction	
-	la	$a0, errorInvalidInstruction
-	jal	printString
-	la	$a0, ($s6)
-	jal	printInt
-	jal	printSpace
-	la	$a0, ($s1)
-	jal	printString
-conversion_loop_valid_instruction:
-	addi	$s6, $s6, 1			# Increment instruction line.
+	la	$s4, ($v0)			# ($s4) = Decoder address.
+	la	$t1, ($v1)
+		
+	beqz 	$t1, conversion_loop_valid	# Print error if instruction is invalid and exit program.
+	jal	printError
+	j	conversion_loop_invalid
+conversion_loop_valid:
+	la	$a0, ($s3)
+	jalr	$s4
+	jal	printNewLine
+conversion_loop_invalid:
+	addi	$s2, $s2, 1			# Increment instruction line.
 	j conversion_loop
 conversion_exit:
-	
 	j	exit
+	
+##########################################################################
+#
+#	Prints an error message.
+#
+##########################################################################
+printError:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	addi	$sp, $sp, -20
+	########################
+	la	$a0, errorInvalidInstruction
+	jal	printString
+	la	$a0, ($t1)
+	jal	printString
+	la	$a0, errorLine
+	jal	printString
+	la	$a0, ($s2)
+	jal	printInt
+	li	$a0, 58
+	jal	printChar
+	li	$a0, 32
+	jal	printChar
+	la	$a0, errorValue
+	jal	printString
+	la	$a0, ($s1)
+	jal	printString
+	########################		# Restore protected registers. 
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################

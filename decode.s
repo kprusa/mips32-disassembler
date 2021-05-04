@@ -8,6 +8,16 @@
 	DECODE_INVALID:		.word 0xfffffff1
 	DECODE_R:		.word 0xfffffff2
 
+.globl	DECODE_ERROR_UNIMPLEMENTED, DECODE_ERROR_INVALID
+	DECODE_ERROR_UNIMPLEMENTED:	.asciiz 	"decode: unimplemented instruction: "
+	DECODE_ERROR_INVALID:		.asciiz 	"decode: invalid instruction: "
+
+.globl decode_errors
+.align 2
+decode_errors:
+	.word DECODE_ERROR_UNIMPLEMENTED
+	.word DECODE_ERROR_INVALID
+
 .globl decode_jumpTable
 .align 2
 decode_jumpTable:			# Jump table for bits 31DECODE_UNIMPLEMENTED9
@@ -36,7 +46,7 @@ decode_0_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 .align 2
 decode_1_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 	.word	DECODE_UNIMPLEMENTED	# 0 (000) add immediate
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) addiu
+	.word	printIntHex		# 1 (001) addiu
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) set less than imm.
 	.word	DECODE_UNIMPLEMENTED	# 3 (011) set less than imm. unsigned
 	.word	DECODE_UNIMPLEMENTED	# 4 (100) andi
@@ -71,7 +81,7 @@ decode_3_jumpTable:			#  Jump table for bits 28DECODE_UNIMPLEMENTED6
 .globl decode_4_jumpTable
 .align 2
 decode_4_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	0x0			# 0 (000) R-format
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) R-format
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) Bltz/gez
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) jump
 	.word	DECODE_UNIMPLEMENTED	# 3 (011) jump & link
@@ -236,6 +246,7 @@ decode_R_7_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 #
 #	Results:
 #		- $v0 =	Address of instruction decoder.
+#		- $v1 = Error value (0 if no error)
 #
 ##########################################################################
 .globl decoderLookup
@@ -260,11 +271,11 @@ decoderLookup:
 	sll	$s1, $s1, 2
 	
 	lw	$v0, decode_jumpTable($s2)	# Get initial jump table address for instruction decode.
-	addu	$v0, $v0, $s1			# Calculate index of final lookup
+	addu	$v0, $v0, $s1			# Calculate index of final lookup.
 	lw	$v0, ($v0)			# Load address of instruction decoder.
 	
 	la	$t1, DECODE_R
-	bne	$v0, $t1, decoderLookup_RType 	# Check if instruction is R-format; if so, use funct code for decoder lookup.
+	bne	$v0, $t1, decoderLookup_errorHandling	# Check if instruction is R-format; if so, use funct code for decoder lookup.
 	and	$s1, $s0, 0x3f			# ($s1) = Bits 5-0 of instruction
 	srl	$s2, $s1, 3			# ($s2) = Bits 5-3 of instruction.
 	and	$s1, $s1, 0x7                  	# ($s1) = Bits 2-0 of instruction.
@@ -273,7 +284,21 @@ decoderLookup:
 	sll	$s1, $s1, 2
 	
 	lw	$v0, decode_R_jumpTable($s2)
-decoderLookup_RType:
+	addu	$v0, $v0, $s1			# Calculate index of final lookup.
+	lw	$v0, ($v0)
+decoderLookup_errorHandling:
+	andi	$t0, $v0, 0x10000000		# Check if lookup is in data segment; if so, it is an error type.
+	bne	$t0, 0x10000000, decoderLookup_noError
+	lw	$v0, ($v0)
+
+	bltu	$v0, 0xfffffff0, decoderLookup_noError
+	and	$v0, $v0, 0x0000000f
+	sll	$v0, $v0, 2
+	lw	$v1, decode_errors($v0)
+	j	decoderLookup_return
+decoderLookup_noError:
+	la	$v1, ($zero)
+decoderLookup_return:
 	########################		# Restore protected registers. 
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)
