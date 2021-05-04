@@ -3,10 +3,10 @@
 # Author: 		Kolbe Prusa
 
 .data
-.globl DECODE_UNIMPLEMENTED, DECODE_INVALID, DECODE_R
-	DECODE_UNIMPLEMENTED:	.word -2
-	DECODE_INVALID:		.word -1
-	DECODE_R:		.word 0
+.globl 	DECODE_UNIMPLEMENTED, DECODE_INVALID, DECODE_R
+	DECODE_UNIMPLEMENTED:	.word 0xfffffff0
+	DECODE_INVALID:		.word 0xfffffff1
+	DECODE_R:		.word 0xfffffff2
 
 .globl decode_jumpTable
 .align 2
@@ -227,3 +227,60 @@ decode_R_7_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .text
+##########################################################################
+#
+#	Finds the decoder the the supplied instruction.
+#
+#	Arguments:
+#		- $a0 = 32-bit instruction
+#
+#	Results:
+#		- $v0 =	Address of instruction decoder.
+#
+##########################################################################
+.globl decoderLookup
+decoderLookup:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	addi	$sp, $sp, -20
+	########################
+	la	$s0, ($a0)
+	
+	srl	$s1, $s0, 26			# ($s1) = Instruction opcode.
+	srl	$s2, $s1, 3			# ($s2) = Bits 31-29 of instruction.
+	and	$s1, $s1, 0x7                  	# ($s1) = Bits 28-26 of instruction.
+	
+	sll	$s2, $s2, 2			# Word align for index
+	sll	$s1, $s1, 2
+	
+	lw	$v0, decode_jumpTable($s2)	# Get initial jump table address for instruction decode.
+	addu	$v0, $v0, $s1			# Calculate index of final lookup
+	lw	$v0, ($v0)			# Load address of instruction decoder.
+	
+	la	$t1, DECODE_R
+	bne	$v0, $t1, decoderLookup_RType 	# Check if instruction is R-format; if so, use funct code for decoder lookup.
+	and	$s1, $s0, 0x3f			# ($s1) = Bits 5-0 of instruction
+	srl	$s2, $s1, 3			# ($s2) = Bits 5-3 of instruction.
+	and	$s1, $s1, 0x7                  	# ($s1) = Bits 2-0 of instruction.
+	
+	sll	$s2, $s2, 2			# Word align for index
+	sll	$s1, $s1, 2
+	
+	lw	$v0, decode_R_jumpTable($s2)
+decoderLookup_RType:
+	########################		# Restore protected registers. 
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
