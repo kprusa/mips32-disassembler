@@ -3,7 +3,7 @@
 # Author: 	Kolbe Prusa
 .data
 .globl	FILE_FLAG_R, FILE_FLAG_WC, FILE_FLAG_WCA
-	FILE_FLAG_R:		.word	0
+	FILE_FLAG_R:	.word	0
 	FILE_FLAG_WC:	.word	1
 	FILE_FLAG_WCA:	.word	9
 .text
@@ -127,6 +127,19 @@ readString_return:
 .globl printNewLine
 printNewLine:
 	li	$a0, 10				# load newline character '\n'.
+	li 	$v0, 11 			# load syscall code for print character.
+	syscall
+	
+	jr 	$ra				# return to caller
+	
+##########################################################################
+#
+#	Prints a space.
+#
+##########################################################################
+.globl printSpace
+printSpace:
+	li	$a0, 32				# load space character ' '.
 	li 	$v0, 11 			# load syscall code for print character.
 	syscall
 	
