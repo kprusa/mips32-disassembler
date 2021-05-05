@@ -10,6 +10,9 @@ DECODE_R:		.word 0xfffffff2
 DECODE_ERROR_UNIMPLEMENTED:	.asciiz 	"decode: unimplemented instruction: "
 DECODE_ERROR_INVALID:		.asciiz 	"decode: invalid instruction: "
 
+MNEMONIC_SEPARATOR:		.asciiz		"\t"
+OPERATOR_SEPARATOR:		.asciiz		", "
+
 .align 2
 decode_errors:
 	.word DECODE_ERROR_UNIMPLEMENTED
@@ -34,10 +37,10 @@ decode_0_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_UNIMPLEMENTED    # 1 (001) bltz
 	.asciiz "bltz"
 	.align 	4
-	.word	printString		# 2 (010) j				# Implement
+	.word	DECODE_UNIMPLEMENTED    # 2 (010) j				# Implement
 	.asciiz	"j"
 	.align 	4
-	.word	printString		# 3 (011) jal				# Implement
+	.word	DECODE_UNIMPLEMENTED    # 3 (011) jal				# Implement
 	.asciiz	"jal"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 4 (100) beq
@@ -55,10 +58,10 @@ decode_0_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	printString		# 0 (000) addi				# Implement
+	.word	DECODE_UNIMPLEMENTED    # 0 (000) addi				# Implement
 	.asciiz	"addi"
 	.align 	4
-	.word	printString		# 1 (001) addiu
+	.word	DECODE_UNIMPLEMENTED    # 1 (001) addiu
 	.asciiz	"addiu"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) slti
@@ -129,7 +132,7 @@ decode_4_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) lwl 
 	.asciiz "lwl"
 	.align 	4
-	.word	printString		# 3 (011) lw				# Implement
+	.word	DECODE_UNIMPLEMENTED    # 3 (011) lw				# Implement
 	.asciiz	"lw"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 4 (100) lbu
@@ -155,7 +158,7 @@ decode_5_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) swl 
 	.asciiz	"swl"
 	.align 	4
-	.word	printString		# 3 (011) sw				# Implement
+	.word	DECODE_UNIMPLEMENTED    # 3 (011) sw				# Implement
 	.asciiz	"sw"
 	.align 	4
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
@@ -248,7 +251,7 @@ decode_R_0_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_R_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	printString		# 0 (000) jr				# Implement
+	.word	DECODE_UNIMPLEMENTED    # 0 (000) jr				# Implement
 	.asciiz	"jr"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) jalr
@@ -258,7 +261,7 @@ decode_R_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 3 (011) INVALID OPCODE
 	.align 	4
-	.word	printString		# 4 (100) syscall
+	.word	DECODE_UNIMPLEMENTED    # 4 (100) syscall
 	.asciiz	"syscall"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 5 (101) break
@@ -294,13 +297,13 @@ decode_R_2_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_R_3_jumpTable:			#  Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	printString		# 0 (000) mul				# Implement
-	.asciiz	"mul"
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) mult				# Implement
+	.asciiz	"mult"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) mulu
-	.asciiz "mulu"
+	.word	DECODE_UNIMPLEMENTED	# 1 (001) multu
+	.asciiz "multu"
 	.align 	4
-	.word	printString		# 2 (010) div				# Implement
+	.word	DECODE_UNIMPLEMENTED    # 2 (010) div				# Implement
 	.asciiz	"div"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 3 (011) divu
@@ -317,28 +320,28 @@ decode_R_3_jumpTable:			#  Jump table for bits 28-26 of instruction
 .align 	4
 decode_R_4_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	printString		# 0 (000) add				# Implement
+	.word	decoderR_3Reg		# 0 (000) add				# Implement
 	.asciiz	"add"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) addu
+	.word	decoderR_3Reg		# 1 (001) addu
 	.asciiz "addu"
 	.align 	4
-	.word	printString		# 2 (010) sub				# Implement
+	.word	decoderR_3Reg		# 2 (010) sub				# Implement
 	.asciiz	"sub"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) subu
+	.word	decoderR_3Reg		# 3 (011) subu
 	.asciiz "subu"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 4 (100) and
+	.word	decoderR_3Reg		# 4 (100) and
 	.asciiz "and"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 5 (101) or
+	.word	decoderR_3Reg		# 5 (101) or
 	.asciiz "or"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 6 (110) xor
 	.asciiz "xor"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 7 (111) nor
+	.word	decoderR_3Reg		# 7 (111) nor
 	.asciiz "nor"
 
 .align 	4
@@ -348,10 +351,10 @@ decode_R_5_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 1 (001) INVALID OPCODE
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) slt
+	.word	decoderR_3Reg		# 2 (010) slt
 	.asciiz "slt"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) sltu
+	.word	decoderR_3Reg		# 3 (011) sltu
 	.asciiz "sltu"
 	.align 	4
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
@@ -400,6 +403,73 @@ decode_R_7_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
+
+.align 2
+register_mnemonic_lookup:
+	.align 3
+	.asciiz "$zero"
+	.align 3
+	.asciiz "$at"
+	.align 3
+	.asciiz "$v0"
+	.align 3
+	.asciiz "$v1"
+	.align 3
+	.asciiz "$a0"
+	.align 3
+	.asciiz "$a1"
+	.align 3
+	.asciiz "$a2"
+	.align 3
+	.asciiz "$a3"
+	.align 3
+	.asciiz "$t0"
+	.align 3
+	.asciiz "$t1"
+	.align 3
+	.asciiz "$t2"
+	.align 3
+	.asciiz "$t3"
+	.align 3
+	.asciiz "$t4"
+	.align 3
+	.asciiz "$t5"
+	.align 3
+	.asciiz "$t6"
+	.align 3
+	.asciiz "$t7"
+	.align 3
+	.asciiz "$s0"
+	.align 3
+	.asciiz "$s1"
+	.align 3
+	.asciiz "$s2"
+	.align 3
+	.asciiz "$s3"
+	.align 3
+	.asciiz "$s4"
+	.align 3
+	.asciiz "$s5"
+	.align 3
+	.asciiz "$s6"
+	.align 3
+	.asciiz "$s7"
+	.align 3
+	.asciiz "$t8"
+	.align 3
+	.asciiz "$t9"
+	.align 3
+	.asciiz "$k0"
+	.align 3
+	.asciiz "$k1"
+	.align 3
+	.asciiz "$gp"
+	.align 3
+	.asciiz "$sp"
+	.align 3
+	.asciiz "$fp"
+	.align 3
+	.asciiz "$ra"
 .text
 ##########################################################################
 #
@@ -476,3 +546,132 @@ decoderLookup_return:
 	
   	jr  	$ra 
 	#######################
+
+##########################################################################
+#
+#	Decodes an instruction to it's mnemonic string representation.
+#
+#	Arguments:
+#		- $a0 = 32-bit instruction
+#		- $a1 = Text segment address.
+#
+#	Results:
+#		- $v0 = String buffer of decoded instruction.
+#		- $v1 = String error value (0 if no error).
+#
+##########################################################################
+.globl decodeInstruction
+decodeInstruction:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	addi	$sp, $sp, -20
+	########################
+	la	$s0, ($a0)			# Save arguments.
+	la	$s1, ($a1)
+	
+	jal	decoderLookup			# Get instruction decoder.
+	bnez	$v1, decodeInstruction_return	# If instruction is valid, continue; otherwise, return error.
+	la	$s2, ($v0)			# ($s2) = Decoder address.
+	
+	la	$a2, 4($s2)
+	lw	$s2, ($s2)
+	jalr	$s2				# Jump to decoder.
+decodeInstruction_return:
+	########################		# Restore protected registers. 
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
+
+##########################################################################
+#
+#	Decodes an R-format instruction to it's mnemonic string representation.
+#
+#	Arguments:
+#		- $a0 = 32-bit instruction
+#		- $a1 = Text segment address.
+#		- $a2 = Instruction mnemonic string buffer.
+#
+#	Results:
+#		- $v0 = String buffer of decoded instruction.
+#		- $v1 = String error value (0 if no error).
+#
+##########################################################################
+decoderR_3Reg:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	addi	$sp, $sp, -20
+	########################
+	la	$s0, ($a0)			# ($s0) = 32-bit instruction
+	la	$s1, ($a1)			# ($s1) = Text segment address.
+	la	$s2, ($a2)			# ($s2) = Instruction mnemonic string buffer.
+	
+	srl	$t0, $s0, 11			# Shift instruction right to get rid of shamt and funct.
+						# Extract fields from instruction by shifting and masking.
+	and	$s3, $t0, 0x0000001f		# ($s3) = rd field
+	srl	$t0, $t0, 5
+	and	$s4, $t0, 0x0000001f		# ($s4) = rt field
+	srl	$t0, $t0, 5
+	and	$s5, $t0, 0x0000001f		# ($s5) = rs field
+	
+	li	$a0, 32
+	jal	alloc
+	la	$s6, ($v0)			# ($s6) = String buffer for decoded instruction.
+
+
+	la	$a0, ($s6)
+	li	$a1, 20
+	la	$a2, ($s2)
+	jal	stringConcat
+	la	$a2, MNEMONIC_SEPARATOR
+	jal	stringConcat
+	
+	sll	$s3, $s3, 3
+	la	$a2, register_mnemonic_lookup($s3)
+	jal	stringConcat
+	
+	la	$a2, OPERATOR_SEPARATOR
+	jal	stringConcat
+	
+	sll	$s5, $s5, 3
+	la	$a2, register_mnemonic_lookup($s5)
+	jal	stringConcat
+	
+	la	$a2, OPERATOR_SEPARATOR
+	jal	stringConcat
+	
+	sll	$s4, $s4, 3
+	la	$a2, register_mnemonic_lookup($s4)
+	jal	stringConcat
+	
+	la	$v0, ($s6)
+	########################		# Restore protected registers. 
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
+	
+	
+	

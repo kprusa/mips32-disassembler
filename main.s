@@ -61,7 +61,7 @@ conversion_loop:
 	la	$s3, ($v1)			# ($s3) = Converted instruction.
 	
 	la	$a0, ($s3)
-	jal	decoderLookup
+	jal	decodeInstruction
 	la	$s4, ($v0)			# ($s4) = Decoder address.
 	la	$t1, ($v1)
 		
@@ -72,10 +72,13 @@ conversion_loop:
 	jal	printError
 	j	conversion_loop_invalid
 conversion_loop_valid:
-	addi	$a0, $s4, 4
-	lw	$s4, ($s4)
-	jalr	$s4
+	la	$a0, ($s4)
+	jal	printString
 	jal	printNewLine
+	#addi	$a0, $s4, 4
+	#lw	$s4, ($s4)
+	#jalr	$s4
+	#jal	printNewLine
 conversion_loop_invalid:
 	addi	$s2, $s2, 1			# Increment instruction line.
 	j conversion_loop
