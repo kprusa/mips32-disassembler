@@ -75,10 +75,6 @@ conversion_loop_valid:
 	la	$a0, ($s4)
 	jal	printString
 	jal	printNewLine
-	#addi	$a0, $s4, 4
-	#lw	$s4, ($s4)
-	#jalr	$s4
-	#jal	printNewLine
 conversion_loop_invalid:
 	addi	$s2, $s2, 1			# Increment instruction line.
 	j conversion_loop

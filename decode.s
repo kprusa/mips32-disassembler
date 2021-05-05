@@ -617,19 +617,21 @@ decoderR_3Reg:
 	sw 	$s0, -8($fp)
 	sw 	$s1, -12($fp)	
 	sw 	$s2, -16($fp)
-	addi	$sp, $sp, -20
+	sw 	$s3, -20($fp)
+	sw 	$s4, -24($fp)
+	sw 	$s5, -28($fp)
+	sw 	$s6, -32($fp)
+	
+	addi	$sp, $sp, -36
 	########################
 	la	$s0, ($a0)			# ($s0) = 32-bit instruction
 	la	$s1, ($a1)			# ($s1) = Text segment address.
 	la	$s2, ($a2)			# ($s2) = Instruction mnemonic string buffer.
 	
-	srl	$t0, $s0, 11			# Shift instruction right to get rid of shamt and funct.
-						# Extract fields from instruction by shifting and masking.
-	and	$s3, $t0, 0x0000001f		# ($s3) = rd field
-	srl	$t0, $t0, 5
-	and	$s4, $t0, 0x0000001f		# ($s4) = rt field
-	srl	$t0, $t0, 5
-	and	$s5, $t0, 0x0000001f		# ($s5) = rs field
+	jal	decoderR_fields			# Decode the instruction 
+	la	$s3, ($t0)			# ($s3) = rd field
+	la	$s4, ($v1)			# ($s4) = rt field
+	la	$s5, ($v0)			# ($s5) = rs field
 	
 	li	$a0, 32
 	jal	alloc
@@ -662,7 +664,12 @@ decoderR_3Reg:
 	jal	stringConcat
 	
 	la	$v0, ($s6)
+	li	$v1, 0
 	########################		# Restore protected registers. 
+	sw 	$s6, -32($fp)
+	sw 	$s5, -28($fp)
+	sw 	$s4, -24($fp)
+	sw 	$s3, -20($fp)
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)
 	lw 	$s0, -8($fp)
@@ -673,5 +680,27 @@ decoderR_3Reg:
   	jr  	$ra 
 	#######################
 	
-	
-	
+##########################################################################
+#
+#	Decodes an R-format instruction's fields.
+#
+#	Arguments:
+#		- $a0 = 32-bit instruction
+#
+#	Results:
+#		- $v0 = rs
+#		- $v1 = rt
+#		- $t0 = rd
+#		- $t1 = shamt
+#
+##########################################################################
+decoderR_fields:
+	srl	$a0, $a0, 6			# Shift instruction right to get rid of funct.
+	and	$t1, $a0, 0x0000001f		# ($t1) = shamt
+	srl	$a0, $a0, 5
+	and	$t0, $a0, 0x0000001f		# ($t0) = rd
+	srl	$a0, $a0, 5
+	and	$v1, $a0, 0x0000001f		# ($v1) = rt
+	srl	$a0, $a0, 5
+	and	$v0, $a0, 0x0000001f		# ($v0) = rs
+	jr	$ra
