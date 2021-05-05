@@ -7,8 +7,8 @@ promptFilename:			.asciiz	"Input a filename: "
 errorInvalidFilename:		.asciiz "error: invalid filename: "
 errorInvalidInstruction:	.asciiz "error: invalid instruction: "
 errorLine:			.asciiz "line: "
-errorValue:			.asciiz "value: "
-success:			.asciiz "SUCCESS!\n"
+
+TEXT_SEGMENT_ADDR:			.word	0x00400000
 
 filenameBuffer:			.space	256
 filenameBufferLen:		.word	257
@@ -69,7 +69,8 @@ conversion_loop:
 	jal	printError
 	j	conversion_loop_invalid
 conversion_loop_valid:
-	la	$a0, ($s3)
+	addi	$a0, $s4, 4
+	lw	$s4, ($s4)
 	jalr	$s4
 	jal	printNewLine
 conversion_loop_invalid:
@@ -106,8 +107,15 @@ printError:
 	jal	printChar
 	li	$a0, 32
 	jal	printChar
-	la	$a0, errorValue
-	jal	printString
+	
+	addi	$t0, $s2, -1
+	sll	$t0, $t0, 2
+	lw	$t1, TEXT_SEGMENT_ADDR
+	add	$a0, $t0, $t1
+	jal	printIntHex
+	
+	li	$a0, 32
+	jal	printChar
 	la	$a0, ($s1)
 	jal	printString
 	########################		# Restore protected registers. 
