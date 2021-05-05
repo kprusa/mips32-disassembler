@@ -65,7 +65,10 @@ conversion_loop:
 	la	$s4, ($v0)			# ($s4) = Decoder address.
 	la	$t1, ($v1)
 		
-	beqz 	$t1, conversion_loop_valid	# Print error if instruction is invalid and exit program.
+	beqz 	$t1, conversion_loop_valid	# Print error if instruction is invalid.
+	la	$a0, ($t1)
+	la	$a1, ($s1)
+	la	$a2, ($s2)
 	jal	printError
 	j	conversion_loop_invalid
 conversion_loop_valid:
@@ -83,6 +86,11 @@ conversion_exit:
 #
 #	Prints an error message.
 #
+#	Arguments:
+#		- $a0 = Error message string buffer.
+#		- $a1 = Instruction string buffer.
+#		- $a2 = Line number of erroring instruction.
+#
 ##########################################################################
 printError:
 	########################		# Save protected registers on stack.
@@ -95,26 +103,30 @@ printError:
 	sw 	$s2, -16($fp)
 	addi	$sp, $sp, -20
 	########################
+	la	$s0, ($a0)
+	la	$s1, ($a1)
+	la	$s2, ($a2)
+	
 	la	$a0, errorInvalidInstruction
 	jal	printString
-	la	$a0, ($t1)
+	la	$a0, ($s0)
 	jal	printString
 	la	$a0, errorLine
 	jal	printString
 	la	$a0, ($s2)
 	jal	printInt
-	li	$a0, 58
+	li	$a0, 58				# Print ':'
 	jal	printChar
-	li	$a0, 32
+	li	$a0, 32				# Print ' '
 	jal	printChar
 	
-	addi	$t0, $s2, -1
+	addi	$t0, $s2, -1			# Convert line number to text segment address.
 	sll	$t0, $t0, 2
 	lw	$t1, TEXT_SEGMENT_ADDR
 	add	$a0, $t0, $t1
 	jal	printIntHex
 	
-	li	$a0, 32
+	li	$a0, 32				# Print ' '
 	jal	printChar
 	la	$a0, ($s1)
 	jal	printString
