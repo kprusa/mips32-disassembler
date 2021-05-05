@@ -45,14 +45,14 @@ decode_0_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 .globl decode_1_jumpTable
 .align 2
 decode_1_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) add immediate
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) addi
 	.word	printIntHex		# 1 (001) addiu
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) set less than imm.
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) set less than imm. unsigned
+	.word	DECODE_UNIMPLEMENTED	# 2 (010) slti
+	.word	DECODE_UNIMPLEMENTED	# 3 (011) sltiu
 	.word	DECODE_UNIMPLEMENTED	# 4 (100) andi
 	.word	DECODE_UNIMPLEMENTED	# 5 (101) ori
 	.word	DECODE_UNIMPLEMENTED	# 6 (110) xori
-	.word	DECODE_UNIMPLEMENTED	# 7 (111) load upper immediate
+	.word	DECODE_UNIMPLEMENTED	# 7 (111) lui
 
 .globl decode_2_jumpTable
 .align 2
@@ -69,34 +69,34 @@ decode_2_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 .globl decode_3_jumpTable
 .align 2
 decode_3_jumpTable:			#  Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) load byte 
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) load half 
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) lwl 
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) load word 
-	.word	DECODE_UNIMPLEMENTED	# 4 (100) load byte unsigned
-	.word	DECODE_UNIMPLEMENTED	# 5 (101) load half unsigned
-	.word	DECODE_UNIMPLEMENTED	# 6 (110) lwr
+	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
+	.word	DECODE_INVALID		# 1 (001) INVALID OPCODE
+	.word	DECODE_INVALID		# 2 (010) INVALID OPCODE
+	.word	DECODE_INVALID		# 3 (011) INVALID OPCODE
+	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
+	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
+	.word	DECODE_INVALID		# 6 (110) INVALID OPCODE
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 					
 .globl decode_4_jumpTable
 .align 2
 decode_4_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) R-format
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) Bltz/gez
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) jump
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) jump & link
-	.word	DECODE_UNIMPLEMENTED	# 4 (100) branch eq
-	.word	DECODE_UNIMPLEMENTED	# 5 (101) branch ne
-	.word	DECODE_UNIMPLEMENTED	# 6 (110) blez 
-	.word	DECODE_UNIMPLEMENTED	# 7 (111) bgtz
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) lb
+	.word	DECODE_UNIMPLEMENTED	# 1 (001) lh
+	.word	DECODE_UNIMPLEMENTED	# 2 (010) lwl 
+	.word	DECODE_UNIMPLEMENTED	# 3 (011) lw
+	.word	DECODE_UNIMPLEMENTED	# 4 (100) lbu
+	.word	DECODE_UNIMPLEMENTED	# 5 (101) lhu
+	.word	DECODE_UNIMPLEMENTED	# 6 (110) lwr
+	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .globl decode_5_jumpTable
 .align 2
 decode_5_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) store byte 
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) store half 
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) sb
+	.word	DECODE_UNIMPLEMENTED	# 1 (001) sh
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) swl 
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) store word
+	.word	DECODE_UNIMPLEMENTED	# 3 (011) sw
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
 	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
 	.word	DECODE_UNIMPLEMENTED	# 6 (110) swr
@@ -143,9 +143,9 @@ decode_R_jumpTable:			# Jump table for R-Format instructions.
 .globl decode_R_0_jumpTable
 .align 2
 decode_R_0_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) shift left logical
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) sll
 	.word	DECODE_INVALID		# 1 (001) INVALID OPCODE
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) shift right logical
+	.word	DECODE_UNIMPLEMENTED	# 2 (010) srl
 	.word	DECODE_UNIMPLEMENTED	# 3 (011) sra
 	.word	DECODE_UNIMPLEMENTED	# 4 (100) sllv
 	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
@@ -155,7 +155,7 @@ decode_R_0_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 .globl decode_R_1_jumpTable
 .align 2
 decode_R_1_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) jump register
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) jr
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) jalr
 	.word	DECODE_INVALID		# 2 (010) INVALID OPCODE
 	.word	DECODE_INVALID		# 3 (011) INVALID OPCODE
