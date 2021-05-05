@@ -34,11 +34,11 @@ decode_jumpTable:			# Jump table for bits 31DECODE_UNIMPLEMENTED9
 .align 2
 decode_0_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 	.word	DECODE_R    		# 0 (000) R-format
-	.word	DECODE_UNIMPLEMENTED    # 1 (001) Bltz/gez
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) jump
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) jump & link
-	.word	DECODE_UNIMPLEMENTED	# 4 (100) branch eq
-	.word	DECODE_UNIMPLEMENTED	# 5 (101) branch ne
+	.word	DECODE_UNIMPLEMENTED    # 1 (001) bltz
+	.word	DECODE_UNIMPLEMENTED	# 2 (010) j				# Implement
+	.word	DECODE_UNIMPLEMENTED	# 3 (011) jal				# Implement
+	.word	DECODE_UNIMPLEMENTED	# 4 (100) beq
+	.word	DECODE_UNIMPLEMENTED	# 5 (101) bne
 	.word	DECODE_UNIMPLEMENTED	# 6 (110) blez 
 	.word	DECODE_UNIMPLEMENTED	# 7 (111) bgtz
 	
@@ -84,7 +84,7 @@ decode_4_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 	.word	DECODE_UNIMPLEMENTED	# 0 (000) lb
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) lh
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) lwl 
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) lw
+	.word	DECODE_UNIMPLEMENTED	# 3 (011) lw				# Implement
 	.word	DECODE_UNIMPLEMENTED	# 4 (100) lbu
 	.word	DECODE_UNIMPLEMENTED	# 5 (101) lhu
 	.word	DECODE_UNIMPLEMENTED	# 6 (110) lwr
@@ -96,7 +96,7 @@ decode_5_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 	.word	DECODE_UNIMPLEMENTED	# 0 (000) sb
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) sh
 	.word	DECODE_UNIMPLEMENTED	# 2 (010) swl 
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) sw
+	.word	DECODE_UNIMPLEMENTED	# 3 (011) sw				# Implement
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
 	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
 	.word	DECODE_UNIMPLEMENTED	# 6 (110) swr
@@ -155,7 +155,7 @@ decode_R_0_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 .globl decode_R_1_jumpTable
 .align 2
 decode_R_1_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) jr
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) jr				# Implement
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) jalr
 	.word	DECODE_INVALID		# 2 (010) INVALID OPCODE
 	.word	DECODE_INVALID		# 3 (011) INVALID OPCODE
@@ -179,9 +179,9 @@ decode_R_2_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
 .globl decode_R_3_jumpTable
 .align 2
 decode_R_3_jumpTable:			#  Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) mult
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) multu
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) div
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) mul				# Implement
+	.word	DECODE_UNIMPLEMENTED	# 1 (001) mulu
+	.word	DECODE_UNIMPLEMENTED	# 2 (010) div				# Implement
 	.word	DECODE_UNIMPLEMENTED	# 3 (011) divu
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
 	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
@@ -191,9 +191,9 @@ decode_R_3_jumpTable:			#  Jump table for bits 28DECODE_UNIMPLEMENTED6
 .globl decode_R_4_jumpTable
 .align 2
 decode_R_4_jumpTable:			# Jump table for bits 28DECODE_UNIMPLEMENTED6
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) add
+	.word	DECODE_UNIMPLEMENTED	# 0 (000) add				# Implement
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) addu
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) subtract
+	.word	DECODE_UNIMPLEMENTED	# 2 (010) sub				# Implement
 	.word	DECODE_UNIMPLEMENTED	# 3 (011) subu
 	.word	DECODE_UNIMPLEMENTED	# 4 (100) and
 	.word	DECODE_UNIMPLEMENTED	# 5 (101) or
@@ -267,8 +267,8 @@ decoderLookup:
 	srl	$s2, $s1, 3			# ($s2) = Bits 31-29 of instruction.
 	and	$s1, $s1, 0x7                  	# ($s1) = Bits 28-26 of instruction.
 	
-	sll	$s2, $s2, 2			# Word align for index
-	sll	$s1, $s1, 2
+	sll	$s2, $s2, 2			# Word align for initial index.
+	sll	$s1, $s1, 2			# Word align for second index.
 	
 	lw	$v0, decode_jumpTable($s2)	# Get initial jump table address for instruction decode.
 	addu	$v0, $v0, $s1			# Calculate index of final lookup.
@@ -280,8 +280,8 @@ decoderLookup:
 	srl	$s2, $s1, 3			# ($s2) = Bits 5-3 of instruction.
 	and	$s1, $s1, 0x7                  	# ($s1) = Bits 2-0 of instruction.
 	
-	sll	$s2, $s2, 2			# Word align for index
-	sll	$s1, $s1, 2
+	sll	$s2, $s2, 2			# Word align for initial index.
+	sll	$s1, $s1, 2			# Word align for second index.
 	
 	lw	$v0, decode_R_jumpTable($s2)
 	addu	$v0, $v0, $s1			# Calculate index of final lookup.
