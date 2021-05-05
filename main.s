@@ -53,8 +53,7 @@ conversion_loop:
 	la	$a1, ($s1)
 	li	$a2, 9
 	jal	readFile
-	la	$s2, ($v0)
-	ble	$s2, 1, conversion_exit
+	ble	$v0, 1, conversion_exit
 	
 	la	$a0, ($s1)			# Convert 8 bytes from buffer to int.
 	li	$a1, 9
