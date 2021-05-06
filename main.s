@@ -114,9 +114,9 @@ printError:
 	jal	printString
 	la	$a0, ($s2)
 	jal	printInt
-	li	$a0, 58				# Print ':'
+	li	$a0, ':'			# Print ':'
 	jal	printChar
-	li	$a0, 32				# Print ' '
+	li	$a0, ' '			# Print ' '
 	jal	printChar
 	
 	addi	$t0, $s2, -1			# Convert line number to text segment address.
@@ -125,7 +125,7 @@ printError:
 	add	$a0, $t0, $t1
 	jal	printIntHex
 	
-	li	$a0, 32				# Print ' '
+	li	$a0, ' '			# Print ' '
 	jal	printChar
 	la	$a0, ($s1)
 	jal	printString
