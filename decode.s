@@ -12,10 +12,15 @@ DECODE_ERROR_INVALID:		.asciiz 	"decode: invalid instruction: "
 
 MNEMONIC_SEPARATOR:		.asciiz		"\t"
 OPERATOR_SEPARATOR:		.asciiz		", "
+BRACKET_LEFT:			.asciiz		"("
+BRACKET_RIGHT:			.asciiz		")"
 
 .align 2
 DECODED_INSTRUCTION_BUFFER:	.space		32
 DECODED_INSTRUCTION_BUFFER_LEN:	.word		32
+
+INT_CONVERSION_BUFFER:		.space		16
+INT_CONVERSION_BUFFER_LEN:	.word		16
 
 .align 2
 decode_errors:
@@ -127,25 +132,25 @@ decode_3_jumpTable:			#  Jump table for bits 28-26 of instruction
 .align 	4
 decode_4_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) lb
+	.word	decoderI_loadStore 	# 0 (000) lb
 	.asciiz "lb"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) lh
+	.word	decoderI_loadStore 	# 1 (001) lh
 	.asciiz "lh"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) lwl 
+	.word	decoderI_loadStore 	# 2 (010) lwl 
 	.asciiz "lwl"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 3 (011) lw				# Implement
+	.word	decoderI_loadStore 	# 3 (011) lw				# Implement
 	.asciiz	"lw"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 4 (100) lbu
+	.word	decoderI_loadStore 	# 4 (100) lbu
 	.asciiz "lbu"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 5 (101) lhu
+	.word	decoderI_loadStore 	# 5 (101) lhu
 	.asciiz "lhu"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 6 (110) lwr
+	.word	decoderI_loadStore 	# 6 (110) lwr
 	.asciiz "lwr"
 	.align 	4
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
@@ -153,23 +158,23 @@ decode_4_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_5_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) sb
+	.word	decoderI_loadStore 	# 0 (000) sb
 	.asciiz "sb"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) sh
+	.word	decoderI_loadStore 	# 1 (001) sh
 	.asciiz	"sh"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) swl 
+	.word	decoderI_loadStore 	# 2 (010) swl 
 	.asciiz	"swl"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 3 (011) sw				# Implement
+	.word	decoderI_loadStore 	# 3 (011) sw				# Implement
 	.asciiz	"sw"
 	.align 	4
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
 	.align 	4
 	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 6 (110) swr
+	.word	decoderI_loadStore 	# 6 (110) swr
 	.asciiz "swr"
 	.align 	4
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
@@ -177,7 +182,7 @@ decode_5_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_6_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) ll
+	.word	decoderI_loadStore 	# 0 (000) ll
 	.asciiz "ll"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) lwc1
@@ -198,7 +203,7 @@ decode_6_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_7_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) store cond. word
+	.word	decoderI_loadStore 	# 0 (000) sc
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 1 (001) swc1
 	.align 	4
@@ -642,13 +647,12 @@ decoderR_3Reg:
 	la	$s3, ($t0)			# ($s3) = rd field
 	la	$s4, ($v1)			# ($s4) = rt field
 	la	$s5, ($v0)			# ($s5) = rs field
-	
-	la	$s6, DECODED_INSTRUCTION_BUFFER	# Construct string representation of instruction.
 
-	la	$a0, ($s6)
+	la	$a0, DECODED_INSTRUCTION_BUFFER
 	li	$a1, 20
 	la	$a2, ($s2)
 	jal	stringConcat
+	
 	la	$a2, MNEMONIC_SEPARATOR
 	jal	stringConcat
 	
@@ -670,7 +674,7 @@ decoderR_3Reg:
 	la	$a2, register_mnemonic_lookup($s4)
 	jal	stringConcat
 	
-	la	$v0, ($s6)
+	la	$v0, DECODED_INSTRUCTION_BUFFER
 	li	$v1, 0
 	########################		# Restore protected registers. 
 	sw 	$s6, -32($fp)
@@ -686,7 +690,104 @@ decoderR_3Reg:
 	
   	jr  	$ra 
 	#######################
+
+##########################################################################
+#
+#	Decodes a load/store instruction.
+#
+#	Arguments:
+#		- $a0 = 32-bit instruction
+#		- $a1 = Text segment address.
+#		- $a2 = Instruction mnemonic string buffer.
+#
+#	Results:
+#		- $v0 = String buffer of decoded instruction.
+#		- $v1 = String error value (0 if no error).
+#
+##########################################################################
+decoderI_loadStore:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
 	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	sw 	$s3, -20($fp)
+	sw 	$s4, -24($fp)
+	sw 	$s5, -28($fp)
+	sw 	$s6, -32($fp)
+	
+	addi	$sp, $sp, -36
+	########################
+	la	$s0, ($a0)			# ($s0) = 32-bit instruction
+	la	$s1, ($a1)			# ($s1) = Text segment address.
+	la	$s2, ($a2)			# ($s2) = Instruction mnemonic string buffer.
+	
+	jal	decoderI_fields
+	la	$s3, ($v0)			# ($s3) = rs field
+	la	$s4, ($v1)			# ($s4) = rt field
+	la	$s5, ($t0)			# ($s5) = immediate field
+	
+	la	$a0, DECODED_INSTRUCTION_BUFFER	# Create string representation of instruction.
+	li	$a1, 20
+	la	$a2, ($s2)
+	jal	stringConcat			# Concat instruction mnemonic.
+	
+	la	$a2, MNEMONIC_SEPARATOR
+	jal	stringConcat			# Concat mnemonic-operands separator.
+	
+	sll	$s4, $s4, 3
+	la	$a2, register_mnemonic_lookup($s4)
+	jal	stringConcat			# Concat rt operand.
+		
+	la	$a2, OPERATOR_SEPARATOR
+	jal	stringConcat			# Concat operand separator.
+	
+	beqz	$s5, decoderI_loadStore_0_immd	# Only concat immediate if not zero.
+	la	$a0, INT_CONVERSION_BUFFER	# TODO: refactor this, it is very inefficient.
+	lw	$a1, INT_CONVERSION_BUFFER_LEN
+	jal	clearBuffer
+	
+	la	$a0, ($s5)
+	la	$a1, INT_CONVERSION_BUFFER
+	jal	ItoA				# Convert immediate field to sting.
+	
+	la	$a0, DECODED_INSTRUCTION_BUFFER
+	li	$a1, 20
+	la	$a2, INT_CONVERSION_BUFFER
+	jal	stringConcat			# Concat immediate field.
+decoderI_loadStore_0_immd:
+
+	la	$a2, BRACKET_LEFT
+	jal	stringConcat
+	
+	sll	$s3, $s3, 3
+	la	$a2, register_mnemonic_lookup($s3)
+	jal	stringConcat			# Concat operand separator.
+	
+	la	$a2, BRACKET_RIGHT
+	jal	stringConcat
+	
+	la	$v0, DECODED_INSTRUCTION_BUFFER
+	li	$v1, 0
+
+	########################		# Restore protected registers. 
+	sw 	$s6, -32($fp)
+	sw 	$s5, -28($fp)
+	sw 	$s4, -24($fp)
+	sw 	$s3, -20($fp)
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
+
 ##########################################################################
 #
 #	Decodes an R-format instruction's fields.
@@ -727,6 +828,8 @@ decoderR_fields:
 ##########################################################################
 decoderI_fields:
 	and	$t0, $a0, 0x0000ffff		# ($t0) = immediate
+	sll	$t0, $t0, 16			# Shift immediate bits to upper 16 bits.
+	sra	$t0, $t0, 16			# Shift right arithmetic to preserve sign (sign extension).
 	srl	$a0, $a0, 16
 	and	$v1, $a0, 0x0000001f		# ($v1) = rt
 	srl	$a0, $a0, 5
