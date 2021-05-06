@@ -241,15 +241,15 @@ decode_R_0_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_UNIMPLEMENTED	# 3 (011) sra
 	.asciiz "sra"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 4 (100) sllv
+	.word	decoderR_3Reg		# 4 (100) sllv
 	.asciiz "sllv"
 	.align 	4
 	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 6 (110) srlv
+	.word	decoderR_3Reg		# 6 (110) srlv
 	.asciiz "srlv"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 7 (111) srav
+	.word	decoderR_3Reg		# 7 (111) srav
 	.asciiz "srav"
 	
 .align 	4
@@ -643,7 +643,7 @@ decoderR_3Reg:
 	la	$s4, ($v1)			# ($s4) = rt field
 	la	$s5, ($v0)			# ($s5) = rs field
 	
-	la	$s6, DECODED_INSTRUCTION_BUFFER
+	la	$s6, DECODED_INSTRUCTION_BUFFER	# Construct string representation of instruction.
 
 	la	$a0, ($s6)
 	li	$a1, 20
