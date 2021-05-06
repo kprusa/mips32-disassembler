@@ -138,7 +138,7 @@ readString_loop:
 	lb	$t1, ($t1)
 	beq	$t1, $zero, readString_return
 	addi	$v0, $v0, 1
-	b	readString_loop
+	j	readString_loop
 readString_return:
 	jr 	$ra				# return to caller
 

@@ -52,10 +52,10 @@ decode_0_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_UNIMPLEMENTED    # 3 (011) jal				# Implement
 	.asciiz	"jal"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 4 (100) beq
+	.word	decoderI_arith		# 4 (100) beq
 	.asciiz "beq"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 5 (101) bne
+	.word	decoderI_arith		# 5 (101) bne
 	.asciiz "bne"
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 6 (110) blez 
@@ -88,7 +88,7 @@ decode_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	decoderI_arith		# 6 (110) xori
 	.asciiz "xori"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 7 (111) lui
+	.word	decoderI_arith		# 7 (111) lui
 	.asciiz "lui"
 
 .align 	4
@@ -260,20 +260,20 @@ decode_R_0_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_R_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 0 (000) jr				# Implement
+	.word	decoderR_3Reg		# 0 (000) jr				# Implement
 	.asciiz	"jr"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) jalr
+	.word	decoderR_3Reg		# 1 (001) jalr
 	.asciiz	"jalr"
 	.align 	4
 	.word	DECODE_INVALID		# 2 (010) INVALID OPCODE
 	.align 	4
 	.word	DECODE_INVALID		# 3 (011) INVALID OPCODE
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 4 (100) syscall
+	.word	decoder_mnemonic    	# 4 (100) syscall
 	.asciiz	"syscall"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 5 (101) break
+	.word	decoder_mnemonic	# 5 (101) break
 	.asciiz	"break"
 	.align 	4
 	.word	DECODE_INVALID		# 6 (110) INVALID OPCODE
@@ -611,6 +611,25 @@ decodeInstruction_return:
 
 ##########################################################################
 #
+#	Passthrough decoder simply returns the mnemonic. Used for syscall
+#	and break.
+#
+#	Arguments:
+#		- $a2 = Instruction mnemonic string buffer.
+#
+#	Results:
+#		- $v0 = String buffer of decoded instruction.
+#		- $v1 = String error value (0 if no error).
+#
+##########################################################################
+decoder_mnemonic:
+	la	$v0, ($a2)
+	li	$v1, 0
+	
+  	jr  	$ra 
+
+##########################################################################
+#
 #	Decodes a 3 register R-format instruction.
 #
 #	Arguments:
@@ -656,6 +675,26 @@ decoderR_3Reg:
 	la	$a2, MNEMONIC_SEPARATOR
 	jal	stringConcat
 	
+	andi	$t0, $s0, 0x0000003f 
+	bne	$t0, 0x00000008, decoderR_3Reg_nJ_0	# Check if jr
+	sll	$s5, $s5, 3				# Only concat rs field.
+	la	$a2, register_mnemonic_lookup($s5)
+	jal	stringConcat
+	j	decoderR_3Reg_return
+decoderR_3Reg_nJ_0:
+	bne	$t0, 0x00000009, decoderR_3Reg_nJ	# Check if jalr
+	sll	$s3, $s3, 3
+	la	$a2, register_mnemonic_lookup($s3)
+	jal	stringConcat
+	
+	la	$a2, OPERATOR_SEPARATOR
+	jal	stringConcat
+	
+	sll	$s5, $s5, 3
+	la	$a2, register_mnemonic_lookup($s5)
+	jal	stringConcat
+	j	decoderR_3Reg_return
+decoderR_3Reg_nJ:
 	sll	$s3, $s3, 3
 	la	$a2, register_mnemonic_lookup($s3)
 	jal	stringConcat
@@ -673,7 +712,8 @@ decoderR_3Reg:
 	sll	$s4, $s4, 3
 	la	$a2, register_mnemonic_lookup($s4)
 	jal	stringConcat
-	
+
+decoderR_3Reg_return:
 	la	$v0, DECODED_INSTRUCTION_BUFFER
 	li	$v1, 0
 	########################		# Restore protected registers. 
@@ -830,6 +870,26 @@ decoderI_arith:
 	la	$a2, MNEMONIC_SEPARATOR
 	jal	stringConcat			# Concat mnemonic-operands separator.
 	
+	
+	srl	$t0, $s0, 29			# Check if branching.
+	andi	$t0, $t0, 0x00000007		# Mask bits [5:3]
+	bnez	$t0, decoderI_arith_nb
+	
+	sll	$s3, $s3, 3
+	la	$a2, register_mnemonic_lookup($s3)
+	jal	stringConcat			# Concat rs operand.
+
+	la	$a2, OPERATOR_SEPARATOR
+	jal	stringConcat			# Concat operand separator.
+	
+	sll	$s4, $s4, 3
+	la	$a2, register_mnemonic_lookup($s4)
+	jal	stringConcat			# Concat rt operand.
+		
+	la	$a2, OPERATOR_SEPARATOR
+	jal	stringConcat			# Concat operand separator.
+	j	decoderI_arith_lui
+decoderI_arith_nb:
 	sll	$s4, $s4, 3
 	la	$a2, register_mnemonic_lookup($s4)
 	jal	stringConcat			# Concat rt operand.
@@ -837,12 +897,18 @@ decoderI_arith:
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat			# Concat operand separator.
 	
+	srl	$t0, $s0, 26			# Check if lui.
+	andi	$t0, $t0, 0x00000007		# Mask bits [2:0]
+	beq	$t0, 0x00000007, decoderI_arith_lui
+	
+
 	sll	$s3, $s3, 3
 	la	$a2, register_mnemonic_lookup($s3)
-	jal	stringConcat			# Concat operand separator.
-	
+	jal	stringConcat			# Concat rs operand.
+
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat			# Concat operand separator.
+decoderI_arith_lui:
 	
 	la	$a0, INT_CONVERSION_BUFFER	# TODO: refactor this, it is very inefficient.
 	lw	$a1, INT_CONVERSION_BUFFER_LEN
@@ -857,7 +923,6 @@ decoderI_arith:
 	la	$a2, INT_CONVERSION_BUFFER
 	jal	stringConcat			# Concat immediate field.
 
-	
 	la	$v0, DECODED_INSTRUCTION_BUFFER
 	li	$v1, 0
 
@@ -875,8 +940,6 @@ decoderI_arith:
 	
   	jr  	$ra 
 	#######################
-	
-	
 
 ##########################################################################
 #
