@@ -14,6 +14,10 @@ MNEMONIC_SEPARATOR:		.asciiz		"\t"
 OPERATOR_SEPARATOR:		.asciiz		", "
 
 .align 2
+DECODED_INSTRUCTION_BUFFER:	.space		32
+DECODED_INSTRUCTION_BUFFER_LEN:	.word		32
+
+.align 2
 decode_errors:
 	.word DECODE_ERROR_UNIMPLEMENTED
 	.word DECODE_ERROR_INVALID
@@ -575,6 +579,12 @@ decodeInstruction:
 	la	$s0, ($a0)			# Save arguments.
 	la	$s1, ($a1)
 	
+	la	$a0, DECODED_INSTRUCTION_BUFFER		# TODO: refactor this, it is very inefficient.
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
+	jal	clearBuffer
+	
+	la	$a0, ($s0)
+	la	$a1, ($s1)
 	jal	decoderLookup			# Get instruction decoder.
 	bnez	$v1, decodeInstruction_return	# If instruction is valid, continue; otherwise, return error.
 	la	$s2, ($v0)			# ($s2) = Decoder address.
@@ -633,10 +643,7 @@ decoderR_3Reg:
 	la	$s4, ($v1)			# ($s4) = rt field
 	la	$s5, ($v0)			# ($s5) = rs field
 	
-	li	$a0, 32
-	jal	alloc
-	la	$s6, ($v0)			# ($s6) = String buffer for decoded instruction.
-
+	la	$s6, DECODED_INSTRUCTION_BUFFER
 
 	la	$a0, ($s6)
 	li	$a1, 20
@@ -700,6 +707,27 @@ decoderR_fields:
 	srl	$a0, $a0, 5
 	and	$t0, $a0, 0x0000001f		# ($t0) = rd
 	srl	$a0, $a0, 5
+	and	$v1, $a0, 0x0000001f		# ($v1) = rt
+	srl	$a0, $a0, 5
+	and	$v0, $a0, 0x0000001f		# ($v0) = rs
+	jr	$ra
+	
+##########################################################################
+#
+#	Decodes an I-format instruction's fields.
+#
+#	Arguments:
+#		- $a0 = 32-bit instruction
+#
+#	Results:
+#		- $v0 = rs
+#		- $v1 = rt
+#		- $t0 = immediate
+#
+##########################################################################
+decoderI_fields:
+	and	$t0, $a0, 0x0000ffff		# ($t0) = immediate
+	srl	$a0, $a0, 16
 	and	$v1, $a0, 0x0000001f		# ($v1) = rt
 	srl	$a0, $a0, 5
 	and	$v0, $a0, 0x0000001f		# ($v0) = rs

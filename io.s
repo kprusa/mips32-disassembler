@@ -25,6 +25,29 @@ alloc:
 	syscall
 	jr	$ra 
 
+
+##########################################################################
+#
+#	Clears a buffer, setting all bytes to 0.
+#
+#	Arguments:
+#		- $a0 = Buffer address
+#		- $a1 = Buffer length
+#
+##########################################################################
+.globl clearBuffer
+clearBuffer:
+	la	$t0, ($zero)
+clearBuffer_loop:
+	bgeu	$t0, $a1, clearBuffer_return
+	addu	$t1, $a0, $t0
+	sb	$zero, ($t1)
+	addi	$t0, $t0, 1
+	j	clearBuffer_loop
+clearBuffer_return:
+	jr	$ra
+	
+
 ##########################################################################
 #
 #	Opens a file with the specified flag.
