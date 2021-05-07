@@ -122,7 +122,8 @@ decode_3_jumpTable:			#  Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 3 (011) INVALID OPCODE
 	.align 	4
-	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
+	.word	decoderR_3Reg		# 4 (100) INVALID OPCODE
+	.asciiz	"mul"
 	.align 	4
 	.word	DECODE_INVALID		# 5 (101) INVALID OPCODE
 	.align 	4
