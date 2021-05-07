@@ -1,6 +1,10 @@
 # hex.s		Provides subroutines for handling hexadecimal data.
 #
 # Author: 	Kolbe Prusa
+.data
+.align 2
+.globl	HEX_PREFIX
+HEX_PREFIX:			.asciiz		"0x"
 	
 .text
 ##########################################################################

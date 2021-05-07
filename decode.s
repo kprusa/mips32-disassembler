@@ -14,7 +14,6 @@ MNEMONIC_SEPARATOR:		.asciiz		"\t"
 OPERATOR_SEPARATOR:		.asciiz		", "
 BRACKET_LEFT:			.asciiz		"("
 BRACKET_RIGHT:			.asciiz		")"
-HEX_PREFIX:			.asciiz		"0x"
 
 .align 2
 DECODED_INSTRUCTION_BUFFER:	.space		64
