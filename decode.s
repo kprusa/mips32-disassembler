@@ -14,6 +14,7 @@ MNEMONIC_SEPARATOR:		.asciiz		"\t"
 OPERATOR_SEPARATOR:		.asciiz		", "
 BRACKET_LEFT:			.asciiz		"("
 BRACKET_RIGHT:			.asciiz		")"
+HEX_PREFIX:			.asciiz		"0x"
 
 .align 2
 DECODED_INSTRUCTION_BUFFER:	.space		64
@@ -46,10 +47,10 @@ decode_0_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_UNIMPLEMENTED    # 1 (001) bltz
 	.asciiz "bltz"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 2 (010) j				# Implement
+	.word	decoderJ		# 2 (010) j				# Implement
 	.asciiz	"j"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 3 (011) jal				# Implement
+	.word	decoderJ		# 3 (011) jal				# Implement
 	.asciiz	"jal"
 	.align 	4
 	.word	decoderI_arith		# 4 (100) beq
@@ -70,7 +71,7 @@ decode_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	decoderI_arith		# 0 (000) addi				# Implement
 	.asciiz	"addi"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 1 (001) addiu
+	.word	decoderI_arith		 # 1 (001) addiu
 	.asciiz	"addiu"
 	.align 	4
 	.word	decoderI_arith		# 2 (010) slti
@@ -515,7 +516,6 @@ decoderLookup:
 	
 	lw	$v0, decode_jumpTable($s2)	# Get initial jump table address for instruction decode.
 	addu	$v0, $v0, $s1			# Calculate address of decoder.
-	# lw	$v0, ($v0)			# Load address of instruction decoder.
 
 	lw	$t2, ($v0)			# Load address of instruction decoder.
 	
@@ -530,7 +530,6 @@ decoderLookup:
 	
 	lw	$v0, decode_R_jumpTable($s2)
 	addu	$v0, $v0, $s1			# Calculate address of decoder.
-	# lw	$v0, ($v0)
 	lw	$t2, ($v0)			# Load address of instruction decoder.
 decoderLookup_errorHandling:
 	andi	$t0, $t2, 0x10000000		# Check if lookup is in data segment; if so, it is an error type.
@@ -909,14 +908,19 @@ decoderI_arith_nb:
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat			# Concat operand separator.
 decoderI_arith_lui:
-	
 	la	$a0, INT_CONVERSION_BUFFER	# TODO: refactor this, it is very inefficient.
 	lw	$a1, INT_CONVERSION_BUFFER_LEN
 	jal	clearBuffer
 	
+	la	$s6, intToString		# Handle unsinged instructions.
+	srl	$t0, $s0, 26			
+	andi	$t0, $t0, 0x7
+	bne	$t0, 0x1, decoderI_arith_signed
+	la	$s6, uintToString
+decoderI_arith_signed:	
 	la	$a0, ($s5)
 	la	$a1, INT_CONVERSION_BUFFER
-	jal	intToString			# Convert immediate field to sting.
+	jalr	$s6				# Convert immediate field to sting.
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER
 	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
@@ -1018,6 +1022,82 @@ decoderI_loadStore_0_immd:
 	jal	stringConcat			# Concat operand separator.
 	
 	la	$a2, BRACKET_RIGHT
+	jal	stringConcat
+	
+	la	$v0, DECODED_INSTRUCTION_BUFFER
+	li	$v1, 0
+
+	########################		# Restore protected registers. 
+	sw 	$s6, -32($fp)
+	sw 	$s5, -28($fp)
+	sw 	$s4, -24($fp)
+	sw 	$s3, -20($fp)
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
+
+##########################################################################
+#
+#	Decodes a J-format instruction.
+#
+#	Arguments:
+#		- $a0 = 32-bit instruction
+#		- $a1 = Text segment address.
+#		- $a2 = Instruction mnemonic string buffer.
+#
+#	Results:
+#		- $v0 = String buffer of decoded instruction.
+#		- $v1 = String error value (0 if no error).
+#
+##########################################################################
+decoderJ:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	sw 	$s3, -20($fp)
+	sw 	$s4, -24($fp)
+	sw 	$s5, -28($fp)
+	sw 	$s6, -32($fp)
+	
+	addi	$sp, $sp, -36
+	########################
+	la	$s0, ($a0)			# ($s0) = 32-bit instruction
+	la	$s1, ($a1)			# ($s1) = Text segment address.
+	la	$s2, ($a2)			# ($s2) = Instruction mnemonic string buffer.
+	
+	andi	$s3, $s0, 0x03ffffff		# Mask address field
+	sll	$s3, $s3, 2			# ($s3) = Jump address
+	
+	la	$a0, DECODED_INSTRUCTION_BUFFER	# Create string representation of instruction.
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
+	la	$a2, ($s2)
+	jal	stringConcat			# Concat instruction mnemonic.
+	
+	la	$a2, MNEMONIC_SEPARATOR
+	jal	stringConcat			# Concat mnemonic-operands separator.
+	
+	
+	la	$a0, ($s3)
+	la	$a1, INT_CONVERSION_BUFFER
+	jal	intToHexString			# Convert jump address to HEX string.
+	
+	la	$a0, DECODED_INSTRUCTION_BUFFER	# Concat hex jump address.
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
+	la	$a2, HEX_PREFIX
+	jal	stringConcat
+
+	la	$a2, INT_CONVERSION_BUFFER
 	jal	stringConcat
 	
 	la	$v0, DECODED_INSTRUCTION_BUFFER
