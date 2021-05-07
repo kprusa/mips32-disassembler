@@ -28,18 +28,18 @@ decode_errors:
 	.word DECODE_ERROR_INVALID
 
 .align 2
-decode_jumpTable:			# Jump table for bits 31-29 of instruction
-	.word	decode_0_jumpTable	# 0 (000)
-	.word	decode_1_jumpTable	# 1 (001)
-	.word	decode_2_jumpTable	# 2 (010)
-	.word	decode_3_jumpTable	# 3 (011)
-	.word	decode_4_jumpTable	# 4 (100)
-	.word	decode_5_jumpTable	# 5 (101)
-	.word	decode_6_jumpTable	# 6 (110)
-	.word	decode_7_jumpTable	# 7 (111)
+decode_lookupTable:			# Jump table for bits 31-29 of instruction
+	.word	decode_0_lookupTable	# 0 (000)
+	.word	decode_1_lookupTable	# 1 (001)
+	.word	decode_2_lookupTable	# 2 (010)
+	.word	decode_3_lookupTable	# 3 (011)
+	.word	decode_4_lookupTable	# 4 (100)
+	.word	decode_5_lookupTable	# 5 (101)
+	.word	decode_6_lookupTable	# 6 (110)
+	.word	decode_7_lookupTable	# 7 (111)
 
 .align 	4
-decode_0_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_0_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_R    		# 0 (000) R-format
 	.align 	4
@@ -65,7 +65,7 @@ decode_0_jumpTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "bgtz"
 	
 .align 	4
-decode_1_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_1_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_arith		# 0 (000) addi				# Implement
 	.asciiz	"addi"
@@ -92,7 +92,7 @@ decode_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "lui"
 
 .align 	4
-decode_2_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_2_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 0 (000) TLB
 	.align 	4
@@ -111,7 +111,7 @@ decode_2_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_3_jumpTable:			#  Jump table for bits 28-26 of instruction
+decode_3_lookupTable:			#  Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -131,7 +131,7 @@ decode_3_jumpTable:			#  Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 					
 .align 	4
-decode_4_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_4_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) lb
 	.asciiz "lb"
@@ -157,7 +157,7 @@ decode_4_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_5_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_5_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) sb
 	.asciiz "sb"
@@ -181,7 +181,7 @@ decode_5_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_6_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_6_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) ll
 	.asciiz "ll"
@@ -202,7 +202,7 @@ decode_6_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_7_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_7_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) sc
 	.align 	4
@@ -223,18 +223,18 @@ decode_7_jumpTable:			# Jump table for bits 28-26 of instruction
 ########################################
 	
 .align 2
-decode_R_jumpTable:			# Jump table for R-Format instructions.
-	.word	decode_R_0_jumpTable	# 0 (000)
-	.word	decode_R_1_jumpTable	# 1 (001)
-	.word	decode_R_2_jumpTable	# 2 (010)
-	.word	decode_R_3_jumpTable	# 3 (011)
-	.word	decode_R_4_jumpTable	# 4 (100)
-	.word	decode_R_5_jumpTable	# 5 (101)
-	.word	decode_R_6_jumpTable	# 6 (110)
-	.word	decode_R_7_jumpTable	# 7 (111)
+decode_R_lookupTable:			# Jump table for R-Format instructions.
+	.word	decode_R_0_lookupTable	# 0 (000)
+	.word	decode_R_1_lookupTable	# 1 (001)
+	.word	decode_R_2_lookupTable	# 2 (010)
+	.word	decode_R_3_lookupTable	# 3 (011)
+	.word	decode_R_4_lookupTable	# 4 (100)
+	.word	decode_R_5_lookupTable	# 5 (101)
+	.word	decode_R_6_lookupTable	# 6 (110)
+	.word	decode_R_7_lookupTable	# 7 (111)
 
 .align 	4
-decode_R_0_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_R_0_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderR_shamt		# 0 (000) sll
 	.asciiz "sll"
@@ -259,7 +259,7 @@ decode_R_0_jumpTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "srav"
 	
 .align 	4
-decode_R_1_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_R_1_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderR_3Reg		# 0 (000) jr				# Implement
 	.asciiz	"jr"
@@ -282,7 +282,7 @@ decode_R_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_2_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_R_2_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderR_3Reg		# 0 (000) mfhi
 	.asciiz "mfhi"
@@ -305,7 +305,7 @@ decode_R_2_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_3_jumpTable:			#  Jump table for bits 28-26 of instruction
+decode_R_3_lookupTable:			#  Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderR_3Reg		# 0 (000) mult				# Implement
 	.asciiz	"mult"
@@ -328,7 +328,7 @@ decode_R_3_jumpTable:			#  Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 					
 .align 	4
-decode_R_4_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_R_4_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderR_3Reg		# 0 (000) add				# Implement
 	.asciiz	"add"
@@ -355,7 +355,7 @@ decode_R_4_jumpTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "nor"
 
 .align 	4
-decode_R_5_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_R_5_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -376,7 +376,7 @@ decode_R_5_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_6_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_R_6_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -395,7 +395,7 @@ decode_R_6_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_7_jumpTable:			# Jump table for bits 28-26 of instruction
+decode_R_7_lookupTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -514,7 +514,7 @@ decoderLookup:
 	sll	$s2, $s2, 2			# Word align for initial index.
 	sll	$s1, $s1, 4			# Word align for second index.
 	
-	lw	$v0, decode_jumpTable($s2)	# Get initial jump table address for instruction decode.
+	lw	$v0, decode_lookupTable($s2)	# Get initial jump table address for instruction decode.
 	addu	$v0, $v0, $s1			# Calculate address of decoder.
 
 	lw	$t2, ($v0)			# Load address of instruction decoder.
@@ -528,7 +528,7 @@ decoderLookup:
 	sll	$s2, $s2, 2			# Word align for initial index.
 	sll	$s1, $s1, 4			# Word align for second index.
 	
-	lw	$v0, decode_R_jumpTable($s2)
+	lw	$v0, decode_R_lookupTable($s2)
 	addu	$v0, $v0, $s1			# Calculate address of decoder.
 	lw	$t2, ($v0)			# Load address of instruction decoder.
 decoderLookup_errorHandling:
@@ -700,7 +700,7 @@ decoderR_3Reg_nJ_0:
 	j	decoderR_3Reg_return
 decoderR_3Reg_nJ:
 	bne	$s7, 0x00000003, decoderR_3Reg_nMulDiv	# Check if bits [5:3] = 0b011
-							# i.e., instruction is in decode_R_3_jumpTable.
+							# i.e., instruction is in decode_R_3_lookupTable.
 	sll	$s5, $s5, 3				# Concat rs field.
 	la	$a2, register_mnemonic_lookup($s5)
 	jal	stringConcat
