@@ -77,7 +77,7 @@ decode_1_jumpTable:			# Jump table for bits 28-26 of instruction
 	.word	decoderI_arith		# 2 (010) slti
 	.asciiz "slti"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) sltiu
+	.word	decoderI_arith		# 3 (011) sltiu
 	.asciiz "sltiu"
 	.align 	4
 	.word	decoderI_arith		# 4 (100) andi
@@ -915,7 +915,10 @@ decoderI_arith_lui:
 	la	$s6, intToString		# Handle unsinged instructions.
 	srl	$t0, $s0, 26			
 	andi	$t0, $t0, 0x7
-	bne	$t0, 0x1, decoderI_arith_signed
+	beq	$t0, 0x1, decoderI_arith_unsigned
+	beq	$t0, 0x3, decoderI_arith_unsigned
+	j	decoderI_arith_signed
+decoderI_arith_unsigned:
 	la	$s6, uintToString
 decoderI_arith_signed:	
 	la	$a0, ($s5)
