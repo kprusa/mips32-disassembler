@@ -307,16 +307,16 @@ decode_R_2_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_R_3_jumpTable:			#  Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) mult				# Implement
+	.word	decoderR_3Reg		# 0 (000) mult				# Implement
 	.asciiz	"mult"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) multu
+	.word	decoderR_3Reg		# 1 (001) multu
 	.asciiz "multu"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED    # 2 (010) div				# Implement
+	.word	decoderR_3Reg		# 2 (010) div				# Implement
 	.asciiz	"div"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) divu
+	.word	decoderR_3Reg		# 3 (011) divu
 	.asciiz "divu"
 	.align 	4
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
@@ -674,14 +674,14 @@ decoderR_3Reg:
 	la	$a2, MNEMONIC_SEPARATOR
 	jal	stringConcat
 	
-	andi	$t0, $s0, 0x0000003f 
-	bne	$t0, 0x00000008, decoderR_3Reg_nJ_0	# Check if jr
+	andi	$s6, $s0, 0x0000003f 		# ($s6) = Bits [0:2] of funct code.
+	bne	$s6, 0x00000008, decoderR_3Reg_nJ_0	# Check if jr
 	sll	$s5, $s5, 3				# Only concat rs field.
 	la	$a2, register_mnemonic_lookup($s5)
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nJ_0:
-	bne	$t0, 0x00000009, decoderR_3Reg_nJ	# Check if jalr
+	bne	$s6, 0x00000009, decoderR_3Reg_nJ	# Check if jalr
 	sll	$s3, $s3, 3
 	la	$a2, register_mnemonic_lookup($s3)
 	jal	stringConcat
@@ -694,6 +694,21 @@ decoderR_3Reg_nJ_0:
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nJ:
+	andi	$s7, $s0, 0x00000038			# ($s7) = Bits [5:3] of funct code.
+	bne	$s7, 0x00000018, decoderR_3Reg_nMulDiv	# Check if bits [5:3] = 0b011
+							# i.e., instruction is in decode_R_3_jumpTable.
+	sll	$s5, $s5, 3				# Concat rs field.
+	la	$a2, register_mnemonic_lookup($s5)
+	jal	stringConcat
+	
+	la	$a2, OPERATOR_SEPARATOR
+	jal	stringConcat
+	
+	sll	$s4, $s4, 3				# Concat rt field.
+	la	$a2, register_mnemonic_lookup($s4)
+	jal	stringConcat
+	j	decoderR_3Reg_return
+decoderR_3Reg_nMulDiv:
 	sll	$s3, $s3, 3
 	la	$a2, register_mnemonic_lookup($s3)
 	jal	stringConcat
