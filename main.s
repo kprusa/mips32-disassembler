@@ -16,9 +16,6 @@ filenameBufferLen:		.word	257
 outputFileName:			.asciiz "output.s"
 newLine:			.asciiz "\n"
 
-hexAddressBuffer:		.space	16
-hexAddressBufferLen:		.word	16
-
 OUTPUT_BUFFER:			.space	128
 OUTPUT_BUFFER_LEN:		.word	128
 
