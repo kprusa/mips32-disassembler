@@ -111,7 +111,6 @@ readFile:
 #	Arguments:
 #		- $a0 = File descriptor
 #		- $a1 = Address of output buffer.
-#		- $a2 = Number of characters to write.
 #
 #	Results:
 #		- $v0 =	Number of bytes written
@@ -121,10 +120,37 @@ readFile:
 ##########################################################################
 .globl writeFile
 writeFile:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	sw 	$s0, -8($fp)
+	sw 	$s1, -12($fp)	
+	sw 	$s2, -16($fp)
+	addi	$sp, $sp, -20
+	########################
+	la	$s0, ($a0)			# ($s0) = File descriptor.
+	la	$s1, ($a1)			# ($s1) = Address of output buffer.
+	
+	la	$a0, ($a1)
+	jal	stringLen
+
+	la	$a0, ($s0)
+	la	$a1, ($s1)
+	la	$a2, ($v0)
 	li	$v0, 15				# load syscall code for open file.
 	syscall
-	jr	$ra 
-
+	########################		# Restore protected registers. 
+	lw 	$s2, -16($fp)
+	lw 	$s1, -12($fp)
+	lw 	$s0, -8($fp)
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
 ##########################################################################
 #
 #	Exits the program

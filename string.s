@@ -87,10 +87,11 @@ stringLen_loop:
 	j	stringLen_loop
 stringLen_return:
 	jr	$ra
+	
 
 ##########################################################################
 #
-#	Converts an integer into its string representation
+#	Converts a signed 32-bit integer into its string representation.
 #
 #	Arguments:
 #		- $a0 = Integer to convert.
@@ -100,61 +101,81 @@ stringLen_return:
 #		- $v0 = Length of converted string.
 #
 ##########################################################################
-.globl ItoA
-ItoA:
-  	bnez 	$a0, ItoA_non_zero  		# first, handle the special case of a value of zero
-  	li   	$t0, '0'
- 	sb   	$t0, 0($a1)
-  	sb   	$zero, 1($a1)
-  	li   	$v0, 1
-  	jr   	$ra
+.globl intToString
+intToString:
+	########################		# Save protected registers on stack.
+	sw	$fp, -4($sp)
+	la	$fp, -4($sp)
+	
+	sw	$ra, -4($fp)
+	addi	$sp, $sp, -8
+	########################
 
-ItoA_non_zero:
-  	addi 	$t0, $zero, 10    		 # now check for a negative value
-  	li 	$v0, 0
-    
-  	bgtz 	$a0, ItoA_recurse
-  	li   	$t1, '-'
-  	sb   	$t1, 0($a1)
-  	addi 	$v0, $v0, 1
-  	neg  	$a0, $a0
+	bnez	$a0, intToString_non_zero
+	li	$t0, '0'
+	sb	$t0, ($a1)
+	jr	$ra
+intToString_non_zero:
+	bgtz	$a0, intToString_pos		
+	nor	$a0, $a0, $zero			# Convert int to unsigned if negative.	
+	addiu	$a0, $a0, 1
+	li	$t1, '-'			# Write sign to buffer.
+	sb	$t1, ($a1)
+	addi	$a1, $a1, 1
+intToString_pos:
+	jal	uintToString_non_zero
+	
+	########################		# Restore protected registers. 
+	lw	$ra, -4($fp)
+	la	$sp, 4($fp)
+	lw	$fp, ($fp)
+	
+  	jr  	$ra 
+	#######################
+ 
+##########################################################################
+#
+#	Converts an unsigned integer into its string representation.
+#
+#	Arguments:
+#		- $a0 = Integer to convert.
+#		- $a1 = Destination buffer
+#
+#	Results:
+#		- $v0 = Length of converted string.
+#
+##########################################################################
+.globl uintToString
+uintToString:
+	bnez	$a0, uintToString_non_zero
+	li	$t0, '0'
+	sb	$t0, ($a1)
+	jr	$ra
+uintToString_non_zero:
+	la	$t0, ($zero)			# ($t0) = Loop counter.
+	li	$t5, 10				# ($t5) = Divisor
+	la	$t8, ($a0)
+uintToString_convert_loop:
+	divu	$t8, $t5
+	mflo	$t8				# ($t8) = Quotient
+	mfhi	$t9				# ($t9) = Remainder
+	
+	addiu	$t9, $t9, 0x30			# Convert remainder to ASCII value.
+	sb	$t9, -1($sp)			# Store converted ASCII value on stack.
+	
+	addiu	$sp, $sp, -1			# Increase stack size.
+	addiu	$t0, $t0, 1			# Increment loop counter.
+	
+	bnez	$t8, uintToString_convert_loop	# Continue conversion until quotient is zero.
 
-ItoA_recurse:
-	###
-  	addi 	$sp, $sp, -24
-  	sw   	$fp, 8($sp)
-  	addi 	$fp, $sp, 8
-  	sw   	$a0, 4($fp)
-  	sw   	$a1, 8($fp)
-  	sw   	$ra, -4($fp)
-  	sw   	$s0, -8($fp)
-  	sw   	$s1, -12($fp)
-  	###
-   
-  	div  	$a0, $t0       			# $a0/10
-  	mflo 	$s0            			# $s0 = quotient
-  	mfhi 	$s1            			# s1 = remainder  
-  	beqz 	$s0, ItoA_write
-
-ItoA_continue:
-  	move 	$a0, $s0  
-  	jal 	ItoA_recurse
-
-ItoA_write:
-  	add	$t1, $a1, $v0
-  	addi	$v0, $v0, 1    
-  	addi 	$t2, $s1, 0x30 			# convert to ASCII
-  	sb   	$t2, 0($t1)    			# store in the buffer
-  	sb   	$zero, 1($t1)
-  
-ItoA_exit:
-	###
-  	lw   	$a1, 8($fp)
-  	lw   	$a0, 4($fp)
-  	lw   	$ra, -4($fp)
-  	lw   	$s0, -8($fp)
-  	lw   	$s1, -12($fp)
-  	lw   	$fp, 8($sp)    
-  	addi 	$sp, $sp, 24
-  	jr 	$ra
-  	###
+uintToString_write_loop:
+	beqz	$t0, uintToString_return
+	lbu	$t8, ($sp)			# Pop char from stack.
+	sb	$t8, ($a1)			# Write char in buffer.
+	
+	addi	$sp, $sp, 1			# Decrease stack size.
+	addi	$t0, $t0, -1			# Decrement loop counter.
+	addi	$a1, $a1, 1			# Increment desination buffer address.
+	j	uintToString_write_loop
+uintToString_return:
+  	jr  	$ra

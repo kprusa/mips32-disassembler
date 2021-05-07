@@ -8,7 +8,7 @@ errorInvalidFilename:		.asciiz "error: invalid filename: "
 errorInvalidInstruction:	.asciiz "error: invalid instruction: "
 errorLine:			.asciiz "line: "
 
-TEXT_SEGMENT_ADDR:			.word	0x00400000
+TEXT_SEGMENT_ADDR:		.word	0x00400000
 
 filenameBuffer:			.space	256
 filenameBufferLen:		.word	257
@@ -47,7 +47,7 @@ main:
 	j	exit
 mainValidInputFile:
 	la	$a0, outputFileName
-	lw	$a1, FILE_FLAG_WCA
+	lw	$a1, FILE_FLAG_WC
 	jal	openFile
 	la	$s7, ($v0)			# ($s7) = Output file descriptor.
 	
@@ -78,7 +78,7 @@ conversion_loop:
 	
 	la	$a0, ($s3)
 	jal	decodeInstruction
-	la	$s4, ($v0)			# ($s4) = Decoder address.
+	la	$s4, ($v0)			# ($s4) = Decoded instruction.
 	la	$t1, ($v1)
 		
 	beqz 	$t1, conversion_loop_valid	# Print error if instruction is invalid.
@@ -89,15 +89,11 @@ conversion_loop:
 	jal	printError
 	j	conversion_loop_invalid
 conversion_loop_valid:
-	la	$a0, ($s4)			# Write decoded instruction to output file.
-	jal	stringLen
-	la	$a2, ($v0)
 	la	$a0, ($s7)
 	la	$a1, ($s4)
-	jal	writeFile
+	jal	writeFile			# Write decoded instruction to output file.
 	
 	la	$a1, newLine
-	li	$a2, 1
 	jal	writeFile
 	
 	la	$a0, ($s4)			# Write decoded instruction stdout.

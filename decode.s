@@ -798,7 +798,7 @@ decoderR_shamt:
 	
 	la	$a0, ($s5)
 	la	$a1, INT_CONVERSION_BUFFER
-	jal	ItoA				# Convert shamt field to sting.
+	jal	intToString			# Convert shamt field to sting.
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER
 	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
@@ -916,7 +916,7 @@ decoderI_arith_lui:
 	
 	la	$a0, ($s5)
 	la	$a1, INT_CONVERSION_BUFFER
-	jal	ItoA				# Convert immediate field to sting.
+	jal	intToString			# Convert immediate field to sting.
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER
 	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
@@ -1002,7 +1002,7 @@ decoderI_loadStore:
 	
 	la	$a0, ($s5)
 	la	$a1, INT_CONVERSION_BUFFER
-	jal	ItoA				# Convert immediate field to sting.
+	jal	intToString			# Convert immediate field to sting.
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER
 	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
