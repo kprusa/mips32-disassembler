@@ -167,6 +167,7 @@ uintToString_convert_loop:
 	addiu	$t0, $t0, 1			# Increment loop counter.
 	
 	bnez	$t8, uintToString_convert_loop	# Continue conversion until quotient is zero.
+	la	$v0, ($t0)			# Save length of converted string.
 
 uintToString_write_loop:
 	beqz	$t0, uintToString_return

@@ -225,4 +225,68 @@ convertHexBuffer_conversionDone:
 	
   	jr  	$ra 
 	#######################
+ 
+##########################################################################
+#
+#	Converts an integer into a hex-string representation.
+#
+#	Arguments:
+#		- $a0 = Integer to convert.
+#		- $a1 = Destination buffer
+#
+##########################################################################
+.globl intToHexString
+intToHexString:
+	bnez	$a0, intToHexString_non_zero
+	li	$t0, 0
+	li	$t1, '0'
+intToHexString_zero:
+	sb	$t1, ($a1)
+	addiu	$a1, $a1, 1
+	addiu	$t0, $t0, 1
+	blt	$t0, 8, intToHexString_zero
+	jr	$ra
+intToHexString_non_zero:
+	la	$t0, ($zero)			# ($t0) = Loop counter.
+	li	$t5, 16				# ($t5) = Divisor
+	la	$t8, ($a0)
+intToHexString_convert_loop:
+	divu	$t8, $t5
+	mflo	$t8				# ($t8) = Quotient
+	mfhi	$t9				# ($t9) = Remainder
+	
+	bgt	$t9, 9, intToHexString_char
+	li	$t1, 0x30			# Base ASCII value for '0'.
+	j	intToHexString_convert
+intToHexString_char:
+	li	$t1, 0x61			# Base ASCII value for 'a'.
+	subi	$t9, $t9, 10			# Resolve ASCII offset.		
+intToHexString_convert:
+	add	$t9, $t9, $t1			# Convert remainder to ASCII value.
+	sb	$t9, -1($sp)			# Store converted ASCII value on stack.
+	
+	addiu	$sp, $sp, -1			# Increase stack size.
+	addiu	$t0, $t0, 1			# Increment loop counter.
+	
+	bnez	$t8, intToHexString_convert_loop# Continue conversion until quotient is zero.
+	
+intToHexString_pad:
+	li	$t9, '0'
+	sb	$t9, -1($sp)			# Store converted ASCII value on stack.
+	addiu	$sp, $sp, -1			# Increase stack size.
+	addiu	$t0, $t0, 1			# Increment loop counter.
+	blt	$t0, 8, intToHexString_pad
+
+intToHexString_write_loop:
+	beqz	$t0, intToHexString_return
+	lbu	$t8, ($sp)			# Pop char from stack.
+	sb	$t8, ($a1)			# Write char in buffer.
+	
+	addi	$sp, $sp, 1			# Decrease stack size.
+	addi	$t0, $t0, -1			# Decrement loop counter.
+	addi	$a1, $a1, 1			# Increment desination buffer address.
+	j	intToHexString_write_loop
+intToHexString_return:
+  	jr  	$ra
+
 
