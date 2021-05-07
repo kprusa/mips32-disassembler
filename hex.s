@@ -273,8 +273,8 @@ intToHexString_convert:
 intToHexString_pad:
 	li	$t9, '0'
 	sb	$t9, -1($sp)			# Store converted ASCII value on stack.
-	addiu	$sp, $sp, -1			# Increase stack size.
-	addiu	$t0, $t0, 1			# Increment loop counter.
+	addi	$sp, $sp, -1			# Increase stack size.
+	addi	$t0, $t0, 1			# Increment loop counter.
 	blt	$t0, 8, intToHexString_pad
 
 intToHexString_write_loop:

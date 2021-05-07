@@ -160,11 +160,11 @@ uintToString_convert_loop:
 	mflo	$t8				# ($t8) = Quotient
 	mfhi	$t9				# ($t9) = Remainder
 	
-	addiu	$t9, $t9, 0x30			# Convert remainder to ASCII value.
+	addi	$t9, $t9, 0x30			# Convert remainder to ASCII value.
 	sb	$t9, -1($sp)			# Store converted ASCII value on stack.
 	
-	addiu	$sp, $sp, -1			# Increase stack size.
-	addiu	$t0, $t0, 1			# Increment loop counter.
+	addi	$sp, $sp, -1			# Increase stack size.
+	addi	$t0, $t0, 1			# Increment loop counter.
 	
 	bnez	$t8, uintToString_convert_loop	# Continue conversion until quotient is zero.
 	la	$v0, ($t0)			# Save length of converted string.

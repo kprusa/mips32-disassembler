@@ -16,10 +16,18 @@ filenameBufferLen:		.word	257
 outputFileName:			.asciiz "output.s"
 newLine:			.asciiz "\n"
 
+hexAddressBuffer:		.space	16
+hexAddressBufferLen:		.word	16
+
+OUTPUT_BUFFER:			.space	128
+OUTPUT_BUFFER_LEN:		.word	128
+
+SEPARATOR:			.asciiz "\t"
+NEWLINE:			.asciiz "\n"
+
 .text
 .globl main
 main:
-	jal	printNewLine			# Prompt for input filename.
 	la	$a0, promptFilename
 	jal	printString
 	
@@ -89,16 +97,34 @@ conversion_loop:
 	jal	printError
 	j	conversion_loop_invalid
 conversion_loop_valid:
+	la	$a0, OUTPUT_BUFFER
+	lw	$a1, OUTPUT_BUFFER_LEN
+	jal	clearBuffer
+
+	addi	$t0, $s2, -1			# Convert line number to text segment address.
+	sll	$t0, $t0, 2
+	lw	$t1, TEXT_SEGMENT_ADDR
+	add	$a0, $t0, $t1
+	la	$a1, OUTPUT_BUFFER
+	jal	intToHexString
+	
+	la	$a0, OUTPUT_BUFFER
+	la	$a1, OUTPUT_BUFFER_LEN
+	la	$a2, SEPARATOR
+	jal	stringConcat
+	
+	la	$a2, ($s4)
+	jal	stringConcat
+	
+	la	$a2, NEWLINE
+	jal	stringConcat	
+
 	la	$a0, ($s7)
-	la	$a1, ($s4)
+	la	$a1, OUTPUT_BUFFER
 	jal	writeFile			# Write decoded instruction to output file.
 	
-	la	$a1, newLine
-	jal	writeFile
-	
-	la	$a0, ($s4)			# Write decoded instruction stdout.
+	la	$a0, OUTPUT_BUFFER		# Write decoded instruction stdout.
 	jal	printString
-	jal	printNewLine
 conversion_loop_invalid:
 	addi	$s2, $s2, 1			# Increment instruction line.
 	j conversion_loop
