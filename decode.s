@@ -284,16 +284,16 @@ decode_R_1_jumpTable:			# Jump table for bits 28-26 of instruction
 .align 	4
 decode_R_2_jumpTable:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 0 (000) mfhi
+	.word	decoderR_3Reg		# 0 (000) mfhi
 	.asciiz "mfhi"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 1 (001) mthi
+	.word	decoderR_3Reg		# 1 (001) mthi
 	.asciiz "mthi"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 2 (010) mflo
+	.word	decoderR_3Reg		# 2 (010) mflo
 	.asciiz "mflo"
 	.align 	4
-	.word	DECODE_UNIMPLEMENTED	# 3 (011) mtlo
+	.word	decoderR_3Reg		# 3 (011) mtlo
 	.asciiz "mtlo"
 	.align 	4
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
@@ -654,8 +654,9 @@ decoderR_3Reg:
 	sw 	$s4, -24($fp)
 	sw 	$s5, -28($fp)
 	sw 	$s6, -32($fp)
+	sw 	$s7, -36($fp)
 	
-	addi	$sp, $sp, -36
+	addi	$sp, $sp, -40
 	########################
 	la	$s0, ($a0)			# ($s0) = 32-bit instruction
 	la	$s1, ($a1)			# ($s1) = Text segment address.
@@ -674,14 +675,18 @@ decoderR_3Reg:
 	la	$a2, MNEMONIC_SEPARATOR
 	jal	stringConcat
 	
-	andi	$s6, $s0, 0x0000003f 		# ($s6) = Bits [0:2] of funct code.
-	bne	$s6, 0x00000008, decoderR_3Reg_nJ_0	# Check if jr
+	andi	$s6, $s0, 0x0000007 			# ($s6) = Bits [0:2] of funct code.
+	andi	$s7, $s0, 0x00000038			# ($s7) = Bits [5:3] of funct code.
+	srl	$s7, $s7, 3
+	
+	bne	$s7, 0x00000001, decoderR_3Reg_nJ	# Check if a jump register instruction.
+	bne	$s6, 0x00000000, decoderR_3Reg_nJ_0	# Check if jr
 	sll	$s5, $s5, 3				# Only concat rs field.
 	la	$a2, register_mnemonic_lookup($s5)
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nJ_0:
-	bne	$s6, 0x00000009, decoderR_3Reg_nJ	# Check if jalr
+	bne	$s6, 0x00000001, decoderR_3Reg_nJ	# Check if jalr
 	sll	$s3, $s3, 3
 	la	$a2, register_mnemonic_lookup($s3)
 	jal	stringConcat
@@ -694,8 +699,7 @@ decoderR_3Reg_nJ_0:
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nJ:
-	andi	$s7, $s0, 0x00000038			# ($s7) = Bits [5:3] of funct code.
-	bne	$s7, 0x00000018, decoderR_3Reg_nMulDiv	# Check if bits [5:3] = 0b011
+	bne	$s7, 0x00000003, decoderR_3Reg_nMulDiv	# Check if bits [5:3] = 0b011
 							# i.e., instruction is in decode_R_3_jumpTable.
 	sll	$s5, $s5, 3				# Concat rs field.
 	la	$a2, register_mnemonic_lookup($s5)
@@ -709,6 +713,25 @@ decoderR_3Reg_nJ:
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nMulDiv:
+	la	$a0, DECODED_INSTRUCTION_BUFFER
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
+
+	bne	$s7, 0x00000002, decoderR_3Reg_nMtMf	# Check if mf** / mt**
+	beq	$s6, 0x00000001, decoderR_3Reg_mt	# mthi
+	beq	$s6, 0x00000003, decoderR_3Reg_mt	# mtlo
+	
+	sll	$s3, $s3, 3				# Concat rd field.
+	la	$a2, register_mnemonic_lookup($s3)
+	jal	stringConcat
+	
+	j	decoderR_3Reg_return
+decoderR_3Reg_mt:					# mfhi / mflo
+	sll	$s5, $s5, 3				# Concat rs field.
+	la	$a2, register_mnemonic_lookup($s5)
+	jal	stringConcat
+	
+	j	decoderR_3Reg_return
+decoderR_3Reg_nMtMf:
 	sll	$s3, $s3, 3
 	la	$a2, register_mnemonic_lookup($s3)
 	jal	stringConcat
@@ -731,10 +754,11 @@ decoderR_3Reg_return:
 	la	$v0, DECODED_INSTRUCTION_BUFFER
 	li	$v1, 0
 	########################		# Restore protected registers. 
-	sw 	$s6, -32($fp)
-	sw 	$s5, -28($fp)
-	sw 	$s4, -24($fp)
-	sw 	$s3, -20($fp)
+	lw	$s7, -36($fp)
+	lw 	$s6, -32($fp)
+	lw	$s5, -28($fp)
+	lw 	$s4, -24($fp)
+	lw 	$s3, -20($fp)
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)
 	lw 	$s0, -8($fp)
@@ -823,10 +847,10 @@ decoderR_shamt:
 	li	$v1, 0
 
 	########################		# Restore protected registers. 
-	sw 	$s6, -32($fp)
-	sw 	$s5, -28($fp)
-	sw 	$s4, -24($fp)
-	sw 	$s3, -20($fp)
+	lw	$s6, -32($fp)
+	lw 	$s5, -28($fp)
+	lw	$s4, -24($fp)
+	lw 	$s3, -20($fp)
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)
 	lw 	$s0, -8($fp)
@@ -949,10 +973,10 @@ decoderI_arith_signed:
 	li	$v1, 0
 
 	########################		# Restore protected registers. 
-	sw 	$s6, -32($fp)
-	sw 	$s5, -28($fp)
-	sw 	$s4, -24($fp)
-	sw 	$s3, -20($fp)
+	lw	$s6, -32($fp)
+	lw 	$s5, -28($fp)
+	lw 	$s4, -24($fp)
+	lw 	$s3, -20($fp)
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)
 	lw 	$s0, -8($fp)
@@ -1046,10 +1070,10 @@ decoderI_loadStore_0_immd:
 	li	$v1, 0
 
 	########################		# Restore protected registers. 
-	sw 	$s6, -32($fp)
-	sw 	$s5, -28($fp)
-	sw 	$s4, -24($fp)
-	sw 	$s3, -20($fp)
+	lw 	$s6, -32($fp)
+	lw 	$s5, -28($fp)
+	lw 	$s4, -24($fp)
+	lw 	$s3, -20($fp)
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)
 	lw 	$s0, -8($fp)
@@ -1122,10 +1146,10 @@ decoderJ:
 	li	$v1, 0
 
 	########################		# Restore protected registers. 
-	sw 	$s6, -32($fp)
-	sw 	$s5, -28($fp)
-	sw 	$s4, -24($fp)
-	sw 	$s3, -20($fp)
+	lw 	$s6, -32($fp)
+	lw 	$s5, -28($fp)
+	lw	$s4, -24($fp)
+	lw 	$s3, -20($fp)
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)
 	lw 	$s0, -8($fp)
