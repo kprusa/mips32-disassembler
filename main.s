@@ -13,6 +13,9 @@ TEXT_SEGMENT_ADDR:			.word	0x00400000
 filenameBuffer:			.space	256
 filenameBufferLen:		.word	257
 
+outputFileName:			.asciiz "output.s"
+newLine:			.asciiz "\n"
+
 .text
 .globl main
 main:
@@ -34,15 +37,28 @@ main:
 	la	$a0, filenameBuffer		# Open input file in read-only.
 	lw	$a1, FILE_FLAG_R
 	jal	openFile
-	la	$s0, ($v0)			# ($s0) = Input file descriptor
-	bge	$s0, $zero, mainValidInputFile	# Check that input file is valid, print error if not.
+	la	$s0, ($v0)			# ($s0) = Input file descriptor.
 	
+	bge	$s0, $zero, mainValidInputFile	# Check that input file is valid, print error if not.
 	la	$a0, errorInvalidFilename
 	jal	printString
 	la	$a0, filenameBuffer
 	jal	printString
 	j	exit
 mainValidInputFile:
+	la	$a0, outputFileName
+	lw	$a1, FILE_FLAG_WCA
+	jal	openFile
+	la	$s7, ($v0)			# ($s7) = Output file descriptor.
+	
+	bge	$s0, $zero, mainValidOutputFile	# Check that input file is valid, print error if not.
+	la	$a0, errorInvalidFilename
+	jal	printString
+	la	$a0, outputFileName
+	jal	printString
+	j	exit
+mainValidOutputFile:
+
 	li	$a0, 128			# Allocate input buffer to hold an instruction (8 bytes)
 	jal	alloc
 	la	$s1, ($v0)			# ($s1) = Input buffer address.
@@ -69,16 +85,32 @@ conversion_loop:
 	la	$a0, ($t1)
 	la	$a1, ($s1)
 	la	$a2, ($s2)
+	la	$a3, 4($s4)
 	jal	printError
 	j	conversion_loop_invalid
 conversion_loop_valid:
-	la	$a0, ($s4)
+	la	$a0, ($s4)			# Write decoded instruction to output file.
+	jal	stringLen
+	la	$a2, ($v0)
+	la	$a0, ($s7)
+	la	$a1, ($s4)
+	jal	writeFile
+	
+	la	$a1, newLine
+	li	$a2, 1
+	jal	writeFile
+	
+	la	$a0, ($s4)			# Write decoded instruction stdout.
 	jal	printString
 	jal	printNewLine
 conversion_loop_invalid:
 	addi	$s2, $s2, 1			# Increment instruction line.
 	j conversion_loop
 conversion_exit:
+	la	$a0, ($s0)
+	jal	closeFile
+	la	$a0, ($s7)
+	jal	closeFile
 	j	exit
 	
 ##########################################################################
@@ -89,6 +121,7 @@ conversion_exit:
 #		- $a0 = Error message string buffer.
 #		- $a1 = Instruction string buffer.
 #		- $a2 = Line number of erroring instruction.
+#		- $a3 = Insturction mnemonic
 #
 ##########################################################################
 printError:
@@ -105,6 +138,7 @@ printError:
 	la	$s0, ($a0)
 	la	$s1, ($a1)
 	la	$s2, ($a2)
+	la	$s3, ($a3)
 	
 	la	$a0, errorInvalidInstruction
 	jal	printString
@@ -119,6 +153,11 @@ printError:
 	li	$a0, ' '			# Print ' '
 	jal	printChar
 	
+	la	$a0, ($s3)
+	jal	printString
+	li	$a0, ' '			# Print ' '
+	jal	printChar
+	
 	addi	$t0, $s2, -1			# Convert line number to text segment address.
 	sll	$t0, $t0, 2
 	lw	$t1, TEXT_SEGMENT_ADDR
@@ -129,6 +168,7 @@ printError:
 	jal	printChar
 	la	$a0, ($s1)
 	jal	printString
+
 	########################		# Restore protected registers. 
 	lw 	$s2, -16($fp)
 	lw 	$s1, -12($fp)

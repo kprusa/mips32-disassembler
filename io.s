@@ -106,6 +106,27 @@ readFile:
 
 ##########################################################################
 #
+#	Write to file.
+#
+#	Arguments:
+#		- $a0 = File descriptor
+#		- $a1 = Address of output buffer.
+#		- $a2 = Number of characters to write.
+#
+#	Results:
+#		- $v0 =	Number of bytes written
+#			- 0: End of file.
+#			- <0: Error
+#
+##########################################################################
+.globl writeFile
+writeFile:
+	li	$v0, 15				# load syscall code for open file.
+	syscall
+	jr	$ra 
+
+##########################################################################
+#
 #	Exits the program
 #
 ##########################################################################
