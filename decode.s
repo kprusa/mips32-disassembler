@@ -16,8 +16,8 @@ BRACKET_LEFT:			.asciiz		"("
 BRACKET_RIGHT:			.asciiz		")"
 
 .align 2
-DECODED_INSTRUCTION_BUFFER:	.space		32
-DECODED_INSTRUCTION_BUFFER_LEN:	.word		32
+DECODED_INSTRUCTION_BUFFER:	.space		64
+DECODED_INSTRUCTION_BUFFER_LEN:	.word		64
 
 INT_CONVERSION_BUFFER:		.space		16
 INT_CONVERSION_BUFFER_LEN:	.word		16
@@ -668,7 +668,7 @@ decoderR_3Reg:
 	la	$s5, ($v0)			# ($s5) = rs field
 
 	la	$a0, DECODED_INSTRUCTION_BUFFER
-	li	$a1, 20
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
 	la	$a2, ($s2)
 	jal	stringConcat
 	
@@ -771,7 +771,7 @@ decoderR_shamt:
 	la	$s5, ($t1)			# ($s5) = shamt field
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER	# Create string representation of instruction.
-	li	$a1, 20
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
 	la	$a2, ($s2)
 	jal	stringConcat			# Concat instruction mnemonic.
 	
@@ -801,7 +801,7 @@ decoderR_shamt:
 	jal	ItoA				# Convert shamt field to sting.
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER
-	li	$a1, 20
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
 	la	$a2, INT_CONVERSION_BUFFER
 	jal	stringConcat			# Concat shamt field.
 
@@ -863,7 +863,7 @@ decoderI_arith:
 	la	$s5, ($t0)			# ($s5) = immediate field
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER	# Create string representation of instruction.
-	li	$a1, 20
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
 	la	$a2, ($s2)
 	jal	stringConcat			# Concat instruction mnemonic.
 	
@@ -919,7 +919,7 @@ decoderI_arith_lui:
 	jal	ItoA				# Convert immediate field to sting.
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER
-	li	$a1, 20
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
 	la	$a2, INT_CONVERSION_BUFFER
 	jal	stringConcat			# Concat immediate field.
 
@@ -981,7 +981,7 @@ decoderI_loadStore:
 	la	$s5, ($t0)			# ($s5) = immediate field
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER	# Create string representation of instruction.
-	li	$a1, 20
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
 	la	$a2, ($s2)
 	jal	stringConcat			# Concat instruction mnemonic.
 	
@@ -1005,7 +1005,7 @@ decoderI_loadStore:
 	jal	ItoA				# Convert immediate field to sting.
 	
 	la	$a0, DECODED_INSTRUCTION_BUFFER
-	li	$a1, 20
+	lw	$a1, DECODED_INSTRUCTION_BUFFER_LEN
 	la	$a2, INT_CONVERSION_BUFFER
 	jal	stringConcat			# Concat immediate field.
 decoderI_loadStore_0_immd:
