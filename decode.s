@@ -1,55 +1,80 @@
-# decodeTables.s	Provides subroutines for handling the decoding of instructions.
+# decode.s		Provides subroutines for handling the decoding of MIPS-32 instructions.
+#			
+#			Decoding is performed by using lookup tables indexed by the upper 3 bits
+#			of the instruction's opcode, then the lower 3 bits of the instruction's
+#			opcode. The result of this lookup is the address of a decoder subroutine,
+#			as well as the instructions mnemonic representation, offset by 4 bytes.
+#
+#			Once the decoder is known, it is executed, with the mnemonic instruction
+#			string, 32-bit instruction, and instruction address as arguments.
+#
+#			The entry to this module is decodeInstruction, which performs the lookup
+#			and executes the decoder, returning the string representation of the
+#			instruction.
 #
 # Author: 		Kolbe Prusa
 
+# The following constants are used to mark various states of the instruction lookup tables.
 .data
+#	The instruction is unimplemented (i.e., there is no decoder).
 DECODE_UNIMPLEMENTED:	.word 0xfffffff0
+#	The instruction is invalid (i.e., an instruction which is not a part of the MIPS-32 ISA.
 DECODE_INVALID:		.word 0xfffffff1
+#	The instruction is R-format, perform a lookup using funct code and R_lookupTable.
 DECODE_R:		.word 0xfffffff2
 
+# String representations of errors.
 DECODE_ERROR_UNIMPLEMENTED:	.asciiz 	"decode: unimplemented instruction: "
 DECODE_ERROR_INVALID:		.asciiz 	"decode: invalid instruction: "
 
+# Used to separate instruction mnemonic from operands.
 MNEMONIC_SEPARATOR:		.asciiz		"\t"
+
+# Used to separate operands.
 OPERATOR_SEPARATOR:		.asciiz		", "
+
+# Constants for offset addressing.
 BRACKET_LEFT:			.asciiz		"("
 BRACKET_RIGHT:			.asciiz		")"
 
+# Holds the decoded instruction.
 .align 2
 DECODED_INSTRUCTION_BUFFER:	.space		64
 DECODED_INSTRUCTION_BUFFER_LEN:	.word		64
 
+# Holds decoded int values for the instruction being decoded.
 INT_CONVERSION_BUFFER:		.space		16
 INT_CONVERSION_BUFFER_LEN:	.word		16
 
+# Lookup table for obtaining error string from state constant.
 .align 2
-decode_errors:
+DECODE_LOOKUP_ERRORS:
 	.word DECODE_ERROR_UNIMPLEMENTED
 	.word DECODE_ERROR_INVALID
 
 .align 2
-decode_lookupTable:			# Jump table for bits 31-29 of instruction
-	.word	decode_0_lookupTable	# 0 (000)
-	.word	decode_1_lookupTable	# 1 (001)
-	.word	decode_2_lookupTable	# 2 (010)
-	.word	decode_3_lookupTable	# 3 (011)
-	.word	decode_4_lookupTable	# 4 (100)
-	.word	decode_5_lookupTable	# 5 (101)
-	.word	decode_6_lookupTable	# 6 (110)
-	.word	decode_7_lookupTable	# 7 (111)
+DECODE_LOOKUP:			# Jump table for bits 31-29 of instruction
+	.word	DECODE_0_LOOKUPTABLE	# 0 (000)
+	.word	DECODE_1_LOOKUPTABLE	# 1 (001)
+	.word	DECODE_2_LOOKUPTABLE	# 2 (010)
+	.word	DECODE_3_LOOKUPTABLE	# 3 (011)
+	.word	DECODE_4_LOOKUPTABLE	# 4 (100)
+	.word	DECODE_5_LOOKUPTABLE	# 5 (101)
+	.word	DECODE_6_LOOKUPTABLE	# 6 (110)
+	.word	DECODE_7_LOOKUPTABLE	# 7 (111)
 
 .align 	4
-decode_0_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_0_LOOKUPTABLE:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_R    		# 0 (000) R-format
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED    # 1 (001) bltz
 	.asciiz "bltz"
 	.align 	4
-	.word	decoderJ		# 2 (010) j				# Implement
+	.word	decoderJ		# 2 (010) j				
 	.asciiz	"j"
 	.align 	4
-	.word	decoderJ		# 3 (011) jal				# Implement
+	.word	decoderJ		# 3 (011) jal				
 	.asciiz	"jal"
 	.align 	4
 	.word	decoderI_arith		# 4 (100) beq
@@ -65,9 +90,9 @@ decode_0_lookupTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "bgtz"
 	
 .align 	4
-decode_1_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_1_LOOKUPTABLE:			# Jump table for bits 28-26 of instruction
 	.align 	4
-	.word	decoderI_arith		# 0 (000) addi				# Implement
+	.word	decoderI_arith		# 0 (000) addi				
 	.asciiz	"addi"
 	.align 	4
 	.word	decoderI_arith		 # 1 (001) addiu
@@ -92,7 +117,7 @@ decode_1_lookupTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "lui"
 
 .align 	4
-decode_2_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_2_LOOKUPTABLE:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_UNIMPLEMENTED	# 0 (000) TLB
 	.align 	4
@@ -111,7 +136,7 @@ decode_2_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_3_lookupTable:			#  Jump table for bits 28-26 of instruction
+DECODE_3_LOOKUPTABLE:			#  Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -131,7 +156,7 @@ decode_3_lookupTable:			#  Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 					
 .align 	4
-decode_4_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_4_LOOKUPTABLE:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) lb
 	.asciiz "lb"
@@ -142,7 +167,7 @@ decode_4_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	decoderI_loadStore 	# 2 (010) lwl 
 	.asciiz "lwl"
 	.align 	4
-	.word	decoderI_loadStore 	# 3 (011) lw				# Implement
+	.word	decoderI_loadStore 	# 3 (011) lw				
 	.asciiz	"lw"
 	.align 	4
 	.word	decoderI_loadStore 	# 4 (100) lbu
@@ -157,7 +182,7 @@ decode_4_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_5_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_5_LOOKUPTABLE:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) sb
 	.asciiz "sb"
@@ -168,7 +193,7 @@ decode_5_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	decoderI_loadStore 	# 2 (010) swl 
 	.asciiz	"swl"
 	.align 	4
-	.word	decoderI_loadStore 	# 3 (011) sw				# Implement
+	.word	decoderI_loadStore 	# 3 (011) sw				
 	.asciiz	"sw"
 	.align 	4
 	.word	DECODE_INVALID		# 4 (100) INVALID OPCODE
@@ -181,7 +206,7 @@ decode_5_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_6_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_6_LOOKUPTABLE:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) ll
 	.asciiz "ll"
@@ -202,7 +227,7 @@ decode_6_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_7_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_7_LOOKUPTABLE:			# Jump table for bits 28-26 of instruction
 	.align 	4
 	.word	decoderI_loadStore 	# 0 (000) sc
 	.align 	4
@@ -223,18 +248,18 @@ decode_7_lookupTable:			# Jump table for bits 28-26 of instruction
 ########################################
 	
 .align 2
-decode_R_lookupTable:			# Jump table for R-Format instructions.
-	.word	decode_R_0_lookupTable	# 0 (000)
-	.word	decode_R_1_lookupTable	# 1 (001)
-	.word	decode_R_2_lookupTable	# 2 (010)
-	.word	decode_R_3_lookupTable	# 3 (011)
-	.word	decode_R_4_lookupTable	# 4 (100)
-	.word	decode_R_5_lookupTable	# 5 (101)
-	.word	decode_R_6_lookupTable	# 6 (110)
-	.word	decode_R_7_lookupTable	# 7 (111)
+DECODE_R_LOOKUP:			# Jump table for R-Format instructions.
+	.word	DECODE_R_0_LOOKUPTABLE	# 0 (000)
+	.word	DECODE_R_1_LOOKUPTABLE	# 1 (001)
+	.word	DECODE_R_2_LOOKUPTABLE	# 2 (010)
+	.word	DECODE_R_3_LOOKUPTABLE	# 3 (011)
+	.word	DECODE_R_4_LOOKUPTABLE	# 4 (100)
+	.word	DECODE_R_5_LOOKUPTABLE	# 5 (101)
+	.word	DECODE_R_6_LOOKUPTABLE	# 6 (110)
+	.word	DECODE_R_7_LOOKUPTABLE	# 7 (111)
 
 .align 	4
-decode_R_0_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_R_0_LOOKUPTABLE:			# Jump table for bits 2-0 of R-format instruction
 	.align 	4
 	.word	decoderR_shamt		# 0 (000) sll
 	.asciiz "sll"
@@ -259,9 +284,9 @@ decode_R_0_lookupTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "srav"
 	
 .align 	4
-decode_R_1_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_R_1_LOOKUPTABLE:			# Jump table for bits 2-0 of R-format instruction
 	.align 	4
-	.word	decoderR_3Reg		# 0 (000) jr				# Implement
+	.word	decoderR_3Reg		# 0 (000) jr				
 	.asciiz	"jr"
 	.align 	4
 	.word	decoderR_3Reg		# 1 (001) jalr
@@ -282,7 +307,7 @@ decode_R_1_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_2_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_R_2_LOOKUPTABLE:			# Jump table for bits 2-0 of R-format instruction
 	.align 	4
 	.word	decoderR_3Reg		# 0 (000) mfhi
 	.asciiz "mfhi"
@@ -305,15 +330,15 @@ decode_R_2_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_3_lookupTable:			#  Jump table for bits 28-26 of instruction
+DECODE_R_3_LOOKUPTABLE:			#  Jump table for bits 2-0 of instruction
 	.align 	4
-	.word	decoderR_3Reg		# 0 (000) mult				# Implement
+	.word	decoderR_3Reg		# 0 (000) mult				
 	.asciiz	"mult"
 	.align 	4
 	.word	decoderR_3Reg		# 1 (001) multu
 	.asciiz "multu"
 	.align 	4
-	.word	decoderR_3Reg		# 2 (010) div				# Implement
+	.word	decoderR_3Reg		# 2 (010) div				
 	.asciiz	"div"
 	.align 	4
 	.word	decoderR_3Reg		# 3 (011) divu
@@ -328,15 +353,15 @@ decode_R_3_lookupTable:			#  Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 					
 .align 	4
-decode_R_4_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_R_4_LOOKUPTABLE:			# Jump table for bits 2-0 of R-format instruction
 	.align 	4
-	.word	decoderR_3Reg		# 0 (000) add				# Implement
+	.word	decoderR_3Reg		# 0 (000) add				
 	.asciiz	"add"
 	.align 	4
 	.word	decoderR_3Reg		# 1 (001) addu
 	.asciiz "addu"
 	.align 	4
-	.word	decoderR_3Reg		# 2 (010) sub				# Implement
+	.word	decoderR_3Reg		# 2 (010) sub				
 	.asciiz	"sub"
 	.align 	4
 	.word	decoderR_3Reg		# 3 (011) subu
@@ -355,7 +380,7 @@ decode_R_4_lookupTable:			# Jump table for bits 28-26 of instruction
 	.asciiz "nor"
 
 .align 	4
-decode_R_5_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_R_5_LOOKUPTABLE:			# Jump table for bits 2-0 of R-format instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -376,7 +401,7 @@ decode_R_5_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_6_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_R_6_LOOKUPTABLE:			# Jump table for bits 2-0 of R-format instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -395,7 +420,7 @@ decode_R_6_lookupTable:			# Jump table for bits 28-26 of instruction
 	.word	DECODE_INVALID		# 7 (111) INVALID OPCODE
 
 .align 	4
-decode_R_7_lookupTable:			# Jump table for bits 28-26 of instruction
+DECODE_R_7_LOOKUPTABLE:			# Jump table for bits 2-0 of R-format instruction
 	.align 	4
 	.word	DECODE_INVALID		# 0 (000) INVALID OPCODE
 	.align 	4
@@ -415,7 +440,7 @@ decode_R_7_lookupTable:			# Jump table for bits 28-26 of instruction
 
 
 .align 2
-register_mnemonic_lookup:
+DECODE_REGISTER_LOOKUP:
 	.align 3
 	.asciiz "$zero"
 	.align 3
@@ -514,7 +539,7 @@ decoderLookup:
 	sll	$s2, $s2, 2			# Word align for initial index.
 	sll	$s1, $s1, 4			# Word align for second index.
 	
-	lw	$v0, decode_lookupTable($s2)	# Get initial jump table address for instruction decode.
+	lw	$v0, DECODE_LOOKUP($s2)	# Get initial jump table address for instruction decode.
 	addu	$v0, $v0, $s1			# Calculate address of decoder.
 
 	lw	$t2, ($v0)			# Load address of instruction decoder.
@@ -528,7 +553,7 @@ decoderLookup:
 	sll	$s2, $s2, 2			# Word align for initial index.
 	sll	$s1, $s1, 4			# Word align for second index.
 	
-	lw	$v0, decode_R_lookupTable($s2)
+	lw	$v0, DECODE_R_LOOKUP($s2)
 	addu	$v0, $v0, $s1			# Calculate address of decoder.
 	lw	$t2, ($v0)			# Load address of instruction decoder.
 decoderLookup_errorHandling:
@@ -539,7 +564,7 @@ decoderLookup_errorHandling:
 	bltu	$t2, 0xfffffff0, decoderLookup_noError
 	and	$t2, $t2, 0x0000000f
 	sll	$t2, $t2, 2
-	lw	$v1, decode_errors($t2)
+	lw	$v1, DECODE_LOOKUP_ERRORS($t2)
 	j	decoderLookup_return
 decoderLookup_noError:
 	la	$v1, ($zero)
@@ -682,34 +707,34 @@ decoderR_3Reg:
 	bne	$s7, 0x00000001, decoderR_3Reg_nJ	# Check if a jump register instruction.
 	bne	$s6, 0x00000000, decoderR_3Reg_nJ_0	# Check if jr
 	sll	$s5, $s5, 3				# Only concat rs field.
-	la	$a2, register_mnemonic_lookup($s5)
+	la	$a2, DECODE_REGISTER_LOOKUP($s5)
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nJ_0:
 	bne	$s6, 0x00000001, decoderR_3Reg_nJ	# Check if jalr
 	sll	$s3, $s3, 3
-	la	$a2, register_mnemonic_lookup($s3)
+	la	$a2, DECODE_REGISTER_LOOKUP($s3)
 	jal	stringConcat
 	
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat
 	
 	sll	$s5, $s5, 3
-	la	$a2, register_mnemonic_lookup($s5)
+	la	$a2, DECODE_REGISTER_LOOKUP($s5)
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nJ:
 	bne	$s7, 0x00000003, decoderR_3Reg_nMulDiv	# Check if bits [5:3] = 0b011
 							# i.e., instruction is in decode_R_3_lookupTable.
 	sll	$s5, $s5, 3				# Concat rs field.
-	la	$a2, register_mnemonic_lookup($s5)
+	la	$a2, DECODE_REGISTER_LOOKUP($s5)
 	jal	stringConcat
 	
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat
 	
 	sll	$s4, $s4, 3				# Concat rt field.
-	la	$a2, register_mnemonic_lookup($s4)
+	la	$a2, DECODE_REGISTER_LOOKUP($s4)
 	jal	stringConcat
 	j	decoderR_3Reg_return
 decoderR_3Reg_nMulDiv:
@@ -721,33 +746,33 @@ decoderR_3Reg_nMulDiv:
 	beq	$s6, 0x00000003, decoderR_3Reg_mt	# mtlo
 	
 	sll	$s3, $s3, 3				# Concat rd field.
-	la	$a2, register_mnemonic_lookup($s3)
+	la	$a2, DECODE_REGISTER_LOOKUP($s3)
 	jal	stringConcat
 	
 	j	decoderR_3Reg_return
 decoderR_3Reg_mt:					# mfhi / mflo
 	sll	$s5, $s5, 3				# Concat rs field.
-	la	$a2, register_mnemonic_lookup($s5)
+	la	$a2, DECODE_REGISTER_LOOKUP($s5)
 	jal	stringConcat
 	
 	j	decoderR_3Reg_return
 decoderR_3Reg_nMtMf:
 	sll	$s3, $s3, 3
-	la	$a2, register_mnemonic_lookup($s3)
+	la	$a2, DECODE_REGISTER_LOOKUP($s3)
 	jal	stringConcat
 	
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat
 	
 	sll	$s5, $s5, 3
-	la	$a2, register_mnemonic_lookup($s5)
+	la	$a2, DECODE_REGISTER_LOOKUP($s5)
 	jal	stringConcat
 	
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat
 	
 	sll	$s4, $s4, 3
-	la	$a2, register_mnemonic_lookup($s4)
+	la	$a2, DECODE_REGISTER_LOOKUP($s4)
 	jal	stringConcat
 
 decoderR_3Reg_return:
@@ -817,14 +842,14 @@ decoderR_shamt:
 	jal	stringConcat			# Concat mnemonic-operands separator.
 	
 	sll	$s4, $s4, 3
-	la	$a2, register_mnemonic_lookup($s4)
+	la	$a2, DECODE_REGISTER_LOOKUP($s4)
 	jal	stringConcat			# Concat rd operand.
 		
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat			# Concat operand separator.
 	
 	sll	$s3, $s3, 3
-	la	$a2, register_mnemonic_lookup($s3)
+	la	$a2, DECODE_REGISTER_LOOKUP($s3)
 	jal	stringConcat			# Concat rt operand.
 		
 	la	$a2, OPERATOR_SEPARATOR
@@ -914,14 +939,14 @@ decoderI_arith:
 	bnez	$t0, decoderI_arith_nb
 	
 	sll	$s3, $s3, 3
-	la	$a2, register_mnemonic_lookup($s3)
+	la	$a2, DECODE_REGISTER_LOOKUP($s3)
 	jal	stringConcat			# Concat rs operand.
 
 	la	$a2, OPERATOR_SEPARATOR
 	jal	stringConcat			# Concat operand separator.
 	
 	sll	$s4, $s4, 3
-	la	$a2, register_mnemonic_lookup($s4)
+	la	$a2, DECODE_REGISTER_LOOKUP($s4)
 	jal	stringConcat			# Concat rt operand.
 		
 	la	$a2, OPERATOR_SEPARATOR
@@ -929,7 +954,7 @@ decoderI_arith:
 	j	decoderI_arith_lui
 decoderI_arith_nb:
 	sll	$s4, $s4, 3
-	la	$a2, register_mnemonic_lookup($s4)
+	la	$a2, DECODE_REGISTER_LOOKUP($s4)
 	jal	stringConcat			# Concat rt operand.
 		
 	la	$a2, OPERATOR_SEPARATOR
@@ -941,7 +966,7 @@ decoderI_arith_nb:
 	
 
 	sll	$s3, $s3, 3
-	la	$a2, register_mnemonic_lookup($s3)
+	la	$a2, DECODE_REGISTER_LOOKUP($s3)
 	jal	stringConcat			# Concat rs operand.
 
 	la	$a2, OPERATOR_SEPARATOR
@@ -1035,7 +1060,7 @@ decoderI_loadStore:
 	jal	stringConcat			# Concat mnemonic-operands separator.
 	
 	sll	$s4, $s4, 3
-	la	$a2, register_mnemonic_lookup($s4)
+	la	$a2, DECODE_REGISTER_LOOKUP($s4)
 	jal	stringConcat			# Concat rt operand.
 		
 	la	$a2, OPERATOR_SEPARATOR
@@ -1060,7 +1085,7 @@ decoderI_loadStore_0_immd:
 	jal	stringConcat
 	
 	sll	$s3, $s3, 3
-	la	$a2, register_mnemonic_lookup($s3)
+	la	$a2, DECODE_REGISTER_LOOKUP($s3)
 	jal	stringConcat			# Concat operand separator.
 	
 	la	$a2, BRACKET_RIGHT
